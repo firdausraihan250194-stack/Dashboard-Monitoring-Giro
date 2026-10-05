@@ -15,7 +15,6 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; }
         
-        /* Glassmorphism & Modern Shadows */
         .glass-card {
             background: rgba(30, 41, 59, 0.7);
             backdrop-filter: blur(16px);
@@ -101,7 +100,7 @@
                         </div>
                     </div>
 
-                    <!-- Alasan Tolakan Chart (Persentase Kriteria 3D Effect) -->
+                    <!-- Alasan Tolakan Chart -->
                     <div class="glass-card rounded-2xl p-6">
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="text-base font-semibold text-white flex items-center gap-2">
@@ -116,15 +115,15 @@
                     </div>
                 </div>
 
-                <!-- Section: Top 10 Customer >= 3x -->
+                <!-- Section: Top 10 Customer Tolakan Giro -->
                 <div class="glass-card rounded-2xl p-6">
                     <div class="flex justify-between items-center mb-6">
                         <div>
                             <h3 class="text-lg font-semibold text-white flex items-center gap-2">
                                 <i data-lucide="alert-triangle" class="text-amber-400"></i>
-                                Top 10 Customer dengan Tolakan &ge; 3x
+                                Top 10 Customer Tolakan Giro
                             </h3>
-                            <p class="text-xs text-slate-400 mt-1">Termasuk breakdown 3 tanggal PDC & tolakan terupdate, alasan utama, dan User AO (Marketing)</p>
+                            <p class="text-xs text-slate-400 mt-1">Pelanggan dengan frekuensi tolakan tertinggi berdasarkan penapis tahun dan bulan yang dipilih</p>
                         </div>
                     </div>
 
@@ -198,15 +197,15 @@
         const AR_CSV_URL   = 'https://docs.google.com/spreadsheets/d/1blmL1pawujNDj_QVtnk7d7hq-U8LrAeEAfngdIzAyXE/export?format=csv&gid=471745175';
 
         let giroData = [];
-        let customerAoMap = {}; // Key: Clean Customer Name -> User_AO
-        let customerStatusMap = {}; // Key: Clean Customer Name -> CONTRACT_STATUS
+        let arDataList = [];
+        let customerAoMap = {}; 
+        let customerStatusMap = {}; 
         
         let bankChartInstance = null;
         let reasonChartInstance = null;
 
         async function fetchAllSheetData() {
             try {
-                // Fetch paralel sheet Giro dan sheet AR
                 const [giroRes, arRes] = await Promise.all([
                     fetch(GIRO_CSV_URL),
                     fetch(AR_CSV_URL)
@@ -224,25 +223,80 @@
             }
         }
 
-        // Membersihkan nama dari PT / CV untuk pencocokan akurat
         function cleanName(str) {
             if (!str) return '';
-            return str.replace(/PT\s+/gi, '').replace(/CV\s+/gi, '').replace(/[^a-zA-Z0-9]/g, '').trim().toUpperCase();
+            return str.replace(/PT\s+/gi, '').replace(/CV\s+/gi, '').replace(/[^a-zA-Z0-9\s]/g, '').trim().toUpperCase();
         }
 
-        // Parsing Sheet AR untuk mengambil USER_AO dan CONTRACT_STATUS
         function parseARData(csvText) {
-            const rows = parseCSV(csvText);
-            rows.forEach(r => {
-                const name = cleanName(r['NAMA_CUSTOMER']);
+            arDataList = parseCSV(csvText);
+            arDataList.forEach(r => {
+                const rawName = r['NAMA_CUSTOMER'];
+                const cleaned = cleanName(rawName);
                 const ao   = r['USER_AO'] || '-';
                 const status = r['CONTRACT_STATUS'] || '-';
 
-                if (name) {
-                    if (ao && ao !== '-') customerAoMap[name] = ao;
-                    if (status && status !== '-') customerStatusMap[name] = status;
+                if (cleaned) {
+                    if (ao && ao !== '-') customerAoMap[cleaned] = ao;
+                    if (status && status !== '-') customerStatusMap[cleaned] = status;
                 }
             });
+        }
+
+        function getCustomerAO(rawGiroName) {
+            const cleanedGiro = cleanName(rawGiroName);
+            if (!cleanedGiro) return '-';
+
+            if (customerAoMap[cleanedGiro]) {
+                return customerAoMap[cleanedGiro];
+            }
+
+            const words = cleanedGiro.split(/\s+/).filter(w => w.length > 2);
+            if (words.length >= 2) {
+                const keyword1 = words[0];
+                const keyword2Prefix = words[1].substring(0, 4);
+
+                for (let arItem of arDataList) {
+                    const arClean = cleanName(arItem['NAMA_CUSTOMER']);
+                    if (arClean.includes(keyword1) && arClean.includes(keyword2Prefix)) {
+                        return arItem['USER_AO'] || '-';
+                    }
+                }
+            }
+
+            if (words.length >= 1) {
+                const keyword1 = words[0];
+                for (let arItem of arDataList) {
+                    const arClean = cleanName(arItem['NAMA_CUSTOMER']);
+                    if (arClean.includes(keyword1)) {
+                        return arItem['USER_AO'] || '-';
+                    }
+                }
+            }
+
+            return '-';
+        }
+
+        function getCustomerStatus(rawGiroName) {
+            const cleanedGiro = cleanName(rawGiroName);
+            if (customerStatusMap[cleanedGiro]) {
+                return customerStatusMap[cleanedGiro];
+            }
+
+            const words = cleanedGiro.split(/\s+/).filter(w => w.length > 2);
+            if (words.length >= 2) {
+                const keyword1 = words[0];
+                const keyword2Prefix = words[1].substring(0, 4);
+
+                for (let arItem of arDataList) {
+                    const arClean = cleanName(arItem['NAMA_CUSTOMER']);
+                    if (arClean.includes(keyword1) && arClean.includes(keyword2Prefix)) {
+                        return arItem['CONTRACT_STATUS'] || 'AC';
+                    }
+                }
+            }
+
+            return 'AC';
         }
 
         function parseCSV(text) {
@@ -276,9 +330,7 @@
             const bulanFilter  = document.getElementById('filterBulan').value;
 
             return giroData.filter(item => {
-                const cNameClean = cleanName(item['Atas Nama Rekening']);
-                const status = customerStatusMap[cNameClean] || 'AC';
-
+                const status = getCustomerStatus(item['Atas Nama Rekening']);
                 const tglPDC = new Date(item['Tgl PDC']);
                 if (isNaN(tglPDC)) return false;
 
@@ -298,7 +350,6 @@
             renderHistoryTable();
         }
 
-        // Render Top 5 Bank Chart dengan Style 3D/Glow
         function renderBankChart3D(data) {
             const bankCounts = {};
             data.forEach(d => {
@@ -311,8 +362,6 @@
             if (bankChartInstance) bankChartInstance.destroy();
 
             const ctx = document.getElementById('bankChart').getContext('2d');
-            
-            // Efek Gradient Bar
             const gradient = ctx.createLinearGradient(0, 0, 0, 300);
             gradient.addColorStop(0, '#818cf8');
             gradient.addColorStop(0.5, '#4338ca');
@@ -328,11 +377,7 @@
                         backgroundColor: gradient,
                         borderColor: '#a5b4fc',
                         borderWidth: 1.5,
-                        borderRadius: 12,
-                        shadowOffsetX: 3,
-                        shadowOffsetY: 3,
-                        shadowBlur: 10,
-                        shadowColor: 'rgba(0, 0, 0, 0.5)'
+                        borderRadius: 12
                     }]
                 },
                 options: {
@@ -356,7 +401,6 @@
             });
         }
 
-        // Render Pie/Doughnut Chart Alasan Tolakan (Visual 3D & Pop-out)
         function renderReasonChart3D(data) {
             let danaTdkCukup = 0;
             let asuransiSpecial = 0;
@@ -384,16 +428,8 @@
                     labels: ['Dana Tidak Cukup', 'Asuransi / Tolakan Khusus', 'Alasan Lainnya'],
                     datasets: [{
                         data: [danaTdkCukup, asuransiSpecial, alasanLainnya],
-                        backgroundColor: [
-                            '#f43f5e', // Red Glow
-                            '#f59e0b', // Amber/Gold 3D
-                            '#3b82f6'  // Blue Gloss
-                        ],
-                        hoverBackgroundColor: [
-                            '#fb7185',
-                            '#fbbf24',
-                            '#60a5fa'
-                        ],
+                        backgroundColor: ['#f43f5e', '#f59e0b', '#3b82f6'],
+                        hoverBackgroundColor: ['#fb7185', '#fbbf24', '#60a5fa'],
                         borderColor: '#0f172a',
                         borderWidth: 3,
                         hoverOffset: 12
@@ -424,7 +460,7 @@
             });
         }
 
-        // Render Top 10 Customer >= 3x dengan Nama Marketing / USER_AO
+        // Render Top 10 Customer Berdasarkan Frekuensi Terbanyak (Dynamic)
         function renderTopCustomerTable(data) {
             const customerMap = {};
 
@@ -440,22 +476,21 @@
                 customerMap[rawName].items.push(d);
             });
 
-            // Logika >= 3x (Sesuai instruksi Poin 4)
-            let highRiskList = Object.values(customerMap).filter(c => c.count >= 3);
-            highRiskList.sort((a, b) => b.count - a.count);
-            highRiskList = highRiskList.slice(0, 10);
+            // Menyusun frekuensi dari yang terbanyak dan mengambil 10 teratas
+            let topCustomers = Object.values(customerMap);
+            topCustomers.sort((a, b) => b.count - a.count);
+            topCustomers = topCustomers.slice(0, 10);
 
             const tbody = document.getElementById('tableCustomerBody');
             tbody.innerHTML = '';
 
-            if (highRiskList.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-slate-500">Tidak ada customer dengan tolakan &ge; 3x pada filter ini.</td></tr>`;
+            if (topCustomers.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-slate-500">Tidak ada data customer untuk filter ini.</td></tr>`;
                 return;
             }
 
-            highRiskList.forEach(c => {
-                const cClean = cleanName(c.name);
-                const userAo = customerAoMap[cClean] || '-';
+            topCustomers.forEach(c => {
+                const userAo = getCustomerAO(c.name);
 
                 const sortedItems = c.items.sort((a, b) => new Date(b['Tgl PDC']) - new Date(a['Tgl PDC'])).slice(0, 3);
                 
@@ -480,14 +515,12 @@
             });
         }
 
-        // Render Table History Data Giro
         function renderHistoryTable() {
             const data = getFilteredData();
             const keyword = document.getElementById('searchHistory').value.toLowerCase();
 
             const filteredHistory = data.filter(item => {
-                const cClean = cleanName(item['Atas Nama Rekening']);
-                const userAo = customerAoMap[cClean] || '';
+                const userAo = getCustomerAO(item['Atas Nama Rekening']);
                 const searchStr = `${item['No PDC']} ${item['Atas Nama Rekening']} ${userAo} ${item['Nama Bank']} ${item['Keterangan']}`.toLowerCase();
                 return searchStr.includes(keyword);
             });
@@ -501,8 +534,7 @@
             }
 
             filteredHistory.forEach(item => {
-                const cClean = cleanName(item['Atas Nama Rekening']);
-                const userAo = customerAoMap[cClean] || '-';
+                const userAo = getCustomerAO(item['Atas Nama Rekening']);
 
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-slate-800/50 transition-colors";
