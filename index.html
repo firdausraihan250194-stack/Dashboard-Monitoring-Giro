@@ -35,7 +35,15 @@
                         <i data-lucide="layout-dashboard" class="text-indigo-400"></i>
                         Dashboard Monitoring Tolakan Giro
                     </h1>
-                    <p class="text-xs text-slate-400 mt-1">Analisis Frekuensi & Alasan Tolakan Giro Debitur</p>
+                    <div class="flex items-center gap-3 mt-1">
+                        <p class="text-xs text-slate-400">Analisis Frekuensi & Alasan Tolakan Giro Debitur</p>
+                        <span class="text-slate-600">•</span>
+                        <!-- Informas Last Update -->
+                        <p class="text-xs text-emerald-400 flex items-center gap-1 font-medium">
+                            <i data-lucide="clock" class="w-3.5 h-3.5"></i>
+                            Last Update: <span id="lastUpdateText">Memuat...</span>
+                        </p>
+                    </div>
                 </div>
                 
                 <!-- Filter Controls -->
@@ -80,8 +88,11 @@
             <!-- Dashboard Content -->
             <main class="p-8 space-y-8">
 
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <div class="glass-card rounded-2xl p-6">
+                <!-- Visual Charts & Summary Section (3 Column Layout) -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+                    
+                    <!-- 1. Top 5 Bank Chart -->
+                    <div class="glass-card rounded-2xl p-6 lg:col-span-5 flex flex-col justify-between">
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="text-base font-semibold text-white flex items-center gap-2">
                                 <i data-lucide="landmark" class="text-indigo-400 w-5 h-5"></i>
@@ -89,12 +100,44 @@
                             </h3>
                             <span class="text-xs bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2.5 py-1 rounded-full font-medium">Top 5 Only</span>
                         </div>
-                        <div class="relative h-72">
+                        <div class="relative h-64">
                             <canvas id="bankChart"></canvas>
                         </div>
                     </div>
 
-                    <div class="glass-card rounded-2xl p-6">
+                    <!-- 2. Ringkasan KPI di Tengah -->
+                    <div class="glass-card rounded-2xl p-5 lg:col-span-2 flex flex-col justify-between gap-4 border border-indigo-500/20 bg-slate-900/80">
+                        <div class="text-center pb-2 border-b border-slate-800">
+                            <span class="text-[11px] font-bold tracking-wider uppercase text-slate-400">Ringkasan Filter</span>
+                        </div>
+
+                        <!-- Card KPI 1: Total Customer -->
+                        <div class="bg-slate-800/60 p-3.5 rounded-xl border border-slate-700/60 text-center">
+                            <p class="text-[11px] text-slate-400 font-medium flex items-center justify-center gap-1">
+                                <i data-lucide="users" class="w-3.5 h-3.5 text-indigo-400"></i> Total Customer
+                            </p>
+                            <h4 id="kpiTotalCustomer" class="text-xl font-bold text-white mt-1">0</h4>
+                        </div>
+
+                        <!-- Card KPI 2: Total Tolakan Giro -->
+                        <div class="bg-slate-800/60 p-3.5 rounded-xl border border-slate-700/60 text-center">
+                            <p class="text-[11px] text-slate-400 font-medium flex items-center justify-center gap-1">
+                                <i data-lucide="alert-circle" class="w-3.5 h-3.5 text-rose-400"></i> Total Tolakan Giro
+                            </p>
+                            <h4 id="kpiTotalTolakan" class="text-xl font-bold text-rose-400 mt-1">0</h4>
+                        </div>
+
+                        <!-- Card KPI 3: Total Overdue Amount -->
+                        <div class="bg-slate-800/60 p-3.5 rounded-xl border border-slate-700/60 text-center">
+                            <p class="text-[11px] text-slate-400 font-medium flex items-center justify-center gap-1">
+                                <i data-lucide="dollar-sign" class="w-3.5 h-3.5 text-emerald-400"></i> Total Overdue
+                            </p>
+                            <h4 id="kpiTotalOverdue" class="text-sm font-bold text-emerald-400 mt-1 font-mono">Rp 0</h4>
+                        </div>
+                    </div>
+
+                    <!-- 3. Alasan Tolakan Chart -->
+                    <div class="glass-card rounded-2xl p-6 lg:col-span-5 flex flex-col justify-between">
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="text-base font-semibold text-white flex items-center gap-2">
                                 <i data-lucide="pie-chart" class="text-rose-400 w-5 h-5"></i>
@@ -102,12 +145,14 @@
                             </h3>
                             <span class="text-xs bg-rose-500/10 text-rose-400 border border-rose-500/20 px-2.5 py-1 rounded-full font-medium">Kriteria Utama</span>
                         </div>
-                        <div class="relative h-72 flex items-center justify-center">
+                        <div class="relative h-64 flex items-center justify-center">
                             <canvas id="reasonChart"></canvas>
                         </div>
                     </div>
+
                 </div>
 
+                <!-- Section: Top 10 Customer Tolakan Giro -->
                 <div class="glass-card rounded-2xl p-6">
                     <div class="flex justify-between items-center mb-6">
                         <div>
@@ -115,7 +160,7 @@
                                 <i data-lucide="alert-triangle" class="text-amber-400"></i>
                                 Top 10 Customer Tolakan Giro
                             </h3>
-                            <p class="text-xs text-slate-400 mt-1">Pelanggan dengan frekuensi tolakan tertinggi beserta informasi tunggakan & status kontrak</p>
+                            <p class="text-xs text-slate-400 mt-1">Pelanggan dengan frekuensi tolakan tertinggi (Nama disesuaikan resmi dari sheet AR)</p>
                         </div>
                     </div>
 
@@ -123,7 +168,7 @@
                         <table class="w-full text-left text-xs text-slate-300">
                             <thead class="bg-slate-900/80 text-slate-400 uppercase text-[11px] tracking-wider">
                                 <tr>
-                                    <th class="py-3 px-3 rounded-l-lg">Nama Customer / Rekening</th>
+                                    <th class="py-3 px-3 rounded-l-lg">Nama Customer / Rekening (AR)</th>
                                     <th class="py-3 px-3">Marketing / AO</th>
                                     <th class="py-3 px-2 text-center">Status</th>
                                     <th class="py-3 px-2 text-center">Frek.</th>
@@ -141,6 +186,7 @@
                     </div>
                 </div>
 
+                <!-- Section: History Data Giro -->
                 <div class="glass-card rounded-2xl p-6">
                     <div class="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-6">
                         <div>
@@ -162,7 +208,7 @@
                             <thead class="bg-slate-900 text-slate-400 uppercase sticky top-0 z-10">
                                 <tr>
                                     <th class="py-3 px-4">No PDC</th>
-                                    <th class="py-3 px-4">Atas Nama Rekening</th>
+                                    <th class="py-3 px-4">Atas Nama Rekening (AR)</th>
                                     <th class="py-3 px-4">Marketing / AO</th>
                                     <th class="py-3 px-4">Nama Bank</th>
                                     <th class="py-3 px-4 text-right">Nominal PDC</th>
@@ -182,7 +228,6 @@
     </div>
 
     <script>
-        // Aman dari Error Lucide
         function renderIcons() {
             if (typeof lucide !== 'undefined' && lucide.createIcons) {
                 lucide.createIcons();
@@ -196,6 +241,7 @@
         let arDataList = [];
         let customerAoMap = {}; 
         let customerStatusMap = {}; 
+        let officialNameMap = {}; // Menyimpan Nama Resmi dari AR
         
         let bankChartInstance = null;
         let reasonChartInstance = null;
@@ -212,6 +258,11 @@
 
                 parseARData(arText);
                 giroData = parseCSV(giroText);
+
+                // Set Tanggal Last Update
+                const now = new Date();
+                const options = { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' };
+                document.getElementById('lastUpdateText').innerText = now.toLocaleDateString('id-ID', options) + ' WIB';
 
                 initDashboard();
             } catch (err) {
@@ -239,12 +290,14 @@
                 const status = r['CONTRACT_STATUS'] || '-';
 
                 if (cleaned) {
+                    officialNameMap[cleaned] = rawName;
                     if (ao && ao !== '-') customerAoMap[cleaned] = ao;
                     if (status && status !== '-') customerStatusMap[cleaned] = status;
                 }
             });
         }
 
+        // Ambil Data AR & Nama Resmi
         function getCustomerARInfo(rawGiroName, sampleGiroItem) {
             const cleanedGiro = cleanName(rawGiroName);
             
@@ -261,6 +314,7 @@
                 }
             }
 
+            const officialName = arMatch ? arMatch['NAMA_CUSTOMER'] : (officialNameMap[cleanedGiro] || rawGiroName);
             const instKe = sanitizeNumber(arMatch ? arMatch['INST_KE'] : (sampleGiroItem['Inst_Ke'] || sampleGiroItem['Inst_ke']));
             const schKe = sanitizeNumber(arMatch ? arMatch['SCH_KE'] : (sampleGiroItem['Sch_Ke'] || sampleGiroItem['Sch_ke']));
             const ovdDays = sanitizeNumber(arMatch ? (arMatch['OVD_DAYS'] || arMatch[' OVD_DAYS ']) : sampleGiroItem['Ovd_Days']);
@@ -269,6 +323,7 @@
             const userAo = arMatch ? (arMatch['USER_AO'] || '-') : (customerAoMap[cleanedGiro] || '-');
 
             return {
+                officialName,
                 userAo: (userAo === '' || userAo === null) ? '-' : userAo,
                 status,
                 instKe,
@@ -324,11 +379,38 @@
 
         function updateDashboard() {
             const data = getFilteredData();
+            renderKPICards(data);
             renderBankChart3D(data);
             renderReasonChart3D(data);
             renderTopCustomerTable(data);
             renderHistoryTable();
             renderIcons();
+        }
+
+        // Render Kartu KPI Tengah
+        function renderKPICards(data) {
+            const customerSet = new Set();
+            let totalOverdueSum = 0;
+
+            const customerOverdueMap = {};
+
+            data.forEach(item => {
+                const rawName = item['Atas Nama Rekening'];
+                if (rawName) {
+                    const info = getCustomerARInfo(rawName, item);
+                    customerSet.add(info.officialName);
+                    customerOverdueMap[info.officialName] = parseFloat(info.ovdAmount) || 0;
+                }
+            });
+
+            // Total Overdue berdasarkan Customer Unik
+            Object.values(customerOverdueMap).forEach(amt => {
+                totalOverdueSum += amt;
+            });
+
+            document.getElementById('kpiTotalCustomer').innerText = customerSet.size;
+            document.getElementById('kpiTotalTolakan').innerText = data.length;
+            document.getElementById('kpiTotalOverdue').innerText = formatCurrency(totalOverdueSum);
         }
 
         function renderBankChart3D(data) {
@@ -494,7 +576,7 @@
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-slate-800/60 transition-colors";
                 tr.innerHTML = `
-                    <td class="py-3 px-3 font-semibold text-white text-xs">${c.name}</td>
+                    <td class="py-3 px-3 font-semibold text-white text-xs">${info.officialName}</td>
                     <td class="py-3 px-3 font-medium text-indigo-300 text-xs">${info.userAo}</td>
                     <td class="py-3 px-2 text-center">${statusBadge}</td>
                     <td class="py-3 px-2 text-center">
@@ -517,7 +599,7 @@
 
             const filteredHistory = data.filter(item => {
                 const info = getCustomerARInfo(item['Atas Nama Rekening'], item);
-                const searchStr = `${item['No PDC']} ${item['Atas Nama Rekening']} ${info.userAo} ${item['Nama Bank']} ${item['Keterangan']}`.toLowerCase();
+                const searchStr = `${item['No PDC']} ${info.officialName} ${info.userAo} ${item['Nama Bank']} ${item['Keterangan']}`.toLowerCase();
                 return searchStr.includes(keyword);
             });
 
@@ -536,7 +618,7 @@
                 tr.className = "hover:bg-slate-800/50 transition-colors";
                 tr.innerHTML = `
                     <td class="py-2.5 px-4 font-mono text-indigo-300">${item['No PDC'] || '-'}</td>
-                    <td class="py-2.5 px-4 font-medium text-white">${item['Atas Nama Rekening'] || '-'}</td>
+                    <td class="py-2.5 px-4 font-medium text-white">${info.officialName}</td>
                     <td class="py-2.5 px-4 font-medium text-indigo-400">${info.userAo}</td>
                     <td class="py-2.5 px-4 text-slate-300">${item['Nama Bank'] || '-'}</td>
                     <td class="py-2.5 px-4 text-right font-mono text-emerald-400">${item[' Nominal PDC '] || item['Nominal PDC'] || '-'}</td>
