@@ -14,15 +14,23 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; }
+        
+        /* Glassmorphism & Modern Shadows */
+        .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+        }
     </style>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen">
+<body class="bg-slate-950 text-slate-100 min-h-screen">
 
     <div class="flex h-screen overflow-hidden">
         <div class="flex-1 flex flex-col overflow-y-auto">
             
             <!-- Header -->
-            <header class="bg-slate-800 border-b border-slate-700 px-8 py-5 flex justify-between items-center sticky top-0 z-20 shadow-lg">
+            <header class="bg-slate-900/90 border-b border-slate-800 px-8 py-5 flex flex-wrap justify-between items-center sticky top-0 z-20 shadow-xl backdrop-blur-md gap-4">
                 <div>
                     <h1 class="text-2xl font-bold text-white flex items-center gap-2">
                         <i data-lucide="layout-dashboard" class="text-indigo-400"></i>
@@ -32,19 +40,30 @@
                 </div>
                 
                 <!-- Filter Controls -->
-                <div class="flex items-center gap-4 bg-slate-900/60 p-2 rounded-xl border border-slate-700/60">
+                <div class="flex flex-wrap items-center gap-3 bg-slate-900 p-2 rounded-xl border border-slate-800">
                     <div class="flex items-center gap-2 px-2">
                         <i data-lucide="filter" class="w-4 h-4 text-indigo-400"></i>
                         <span class="text-xs font-semibold text-slate-300">Filter:</span>
                     </div>
                     
-                    <select id="filterTahun" class="bg-slate-800 text-slate-200 text-sm border border-slate-700 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <!-- Filter Status Kontrak -->
+                    <select id="filterContractStatus" class="bg-slate-800 text-slate-200 text-xs border border-slate-700 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium">
+                        <option value="ALL">Semua Status Kontrak</option>
+                        <option value="AC">AC (Active)</option>
+                        <option value="PT">PT (Paid Off)</option>
+                        <option value="CL">CL (Closed)</option>
+                        <option value="RP">RP (Repo)</option>
+                    </select>
+
+                    <!-- Filter Tahun -->
+                    <select id="filterTahun" class="bg-slate-800 text-slate-200 text-xs border border-slate-700 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium">
                         <option value="ALL">Semua Tahun</option>
                         <option value="2025">2025</option>
                         <option value="2026">2026</option>
                     </select>
 
-                    <select id="filterBulan" class="bg-slate-800 text-slate-200 text-sm border border-slate-700 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <!-- Filter Bulan -->
+                    <select id="filterBulan" class="bg-slate-800 text-slate-200 text-xs border border-slate-700 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium">
                         <option value="ALL">Semua Bulan</option>
                         <option value="0">Januari</option>
                         <option value="1">Februari</option>
@@ -65,85 +84,93 @@
             <!-- Dashboard Content -->
             <main class="p-8 space-y-8">
 
-                <!-- Charts Section -->
+                <!-- Visual Charts Section -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     
-                    <!-- Top 10 Bank Chart -->
-                    <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-6 backdrop-blur-xl">
-                        <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                            <i data-lucide="landmark" class="text-indigo-400"></i>
-                            Top 10 Bank Tolakan Giro Terbanyak
-                        </h3>
+                    <!-- Top 5 Bank Chart -->
+                    <div class="glass-card rounded-2xl p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-base font-semibold text-white flex items-center gap-2">
+                                <i data-lucide="landmark" class="text-indigo-400 w-5 h-5"></i>
+                                Top 5 Bank Tolakan Giro Terbanyak
+                            </h3>
+                            <span class="text-xs bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2.5 py-1 rounded-full font-medium">Top 5 Only</span>
+                        </div>
                         <div class="relative h-72">
                             <canvas id="bankChart"></canvas>
                         </div>
                     </div>
 
-                    <!-- Alasan Tolakan Chart (Persentase Kriteria) -->
-                    <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-6 backdrop-blur-xl">
-                        <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                            <i data-lucide="pie-chart" class="text-indigo-400"></i>
-                            Distribusi Persentase Alasan Tolakan
-                        </h3>
-                        <div class="relative h-72">
+                    <!-- Alasan Tolakan Chart (Persentase Kriteria 3D Effect) -->
+                    <div class="glass-card rounded-2xl p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-base font-semibold text-white flex items-center gap-2">
+                                <i data-lucide="pie-chart" class="text-rose-400 w-5 h-5"></i>
+                                Distribusi Persentase Alasan Tolakan
+                            </h3>
+                            <span class="text-xs bg-rose-500/10 text-rose-400 border border-rose-500/20 px-2.5 py-1 rounded-full font-medium">Kriteria Utama</span>
+                        </div>
+                        <div class="relative h-72 flex items-center justify-center">
                             <canvas id="reasonChart"></canvas>
                         </div>
                     </div>
                 </div>
 
-                <!-- Section: Top 10 Customer >3x / Bulan -->
-                <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-6 backdrop-blur-xl">
+                <!-- Section: Top 10 Customer >= 3x -->
+                <div class="glass-card rounded-2xl p-6">
                     <div class="flex justify-between items-center mb-6">
                         <div>
                             <h3 class="text-lg font-semibold text-white flex items-center gap-2">
                                 <i data-lucide="alert-triangle" class="text-amber-400"></i>
-                                Top 10 Customer dengan Tolakan >3x / Bulan
+                                Top 10 Customer dengan Tolakan &ge; 3x
                             </h3>
-                            <p class="text-xs text-slate-400 mt-1">Rincian 3 tanggal PDC, tanggal tolakan terupdate, dan alasan utama tolakan</p>
+                            <p class="text-xs text-slate-400 mt-1">Termasuk breakdown 3 tanggal PDC & tolakan terupdate, alasan utama, dan User AO (Marketing)</p>
                         </div>
                     </div>
 
                     <div class="overflow-x-auto">
                         <table class="w-full text-left text-sm text-slate-300">
-                            <thead class="bg-slate-900/60 text-slate-400 uppercase text-xs">
+                            <thead class="bg-slate-900/80 text-slate-400 uppercase text-xs">
                                 <tr>
                                     <th class="py-3 px-4 rounded-l-lg">Nama Customer / Rekening</th>
+                                    <th class="py-3 px-4">Marketing / AO</th>
                                     <th class="py-3 px-4 text-center">Frek. Tolakan</th>
                                     <th class="py-3 px-4">3 Tanggal PDC & Tolakan Terupdate</th>
                                     <th class="py-3 px-4 rounded-r-lg">Alasan Utama Tolakan</th>
                                 </tr>
                             </thead>
-                            <tbody id="tableCustomerBody" class="divide-y divide-slate-700/50">
+                            <tbody id="tableCustomerBody" class="divide-y divide-slate-800">
                                 <!-- Data Diisi Lewat JavaScript -->
                             </tbody>
                         </table>
                     </div>
                 </div>
 
-                <!-- Section: History Data Gabungan Google Sheet -->
-                <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-6 backdrop-blur-xl">
+                <!-- Section: History Data Giro -->
+                <div class="glass-card rounded-2xl p-6">
                     <div class="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-6">
                         <div>
                             <h3 class="text-lg font-semibold text-white flex items-center gap-2">
                                 <i data-lucide="database" class="text-emerald-400"></i>
-                                History Data Gabungan Giro
+                                History Data Giro
                             </h3>
-                            <p class="text-xs text-slate-400 mt-1">Menampilkan seluruh catatan transaksi dari Google Sheet</p>
+                            <p class="text-xs text-slate-400 mt-1">Rekap seluruh catatan transaksi giro beserta rincian Marketing/AO</p>
                         </div>
                         
-                        <!-- Search Box Data History -->
-                        <div class="relative w-full md:w-72">
-                            <input type="text" id="searchHistory" placeholder="Cari nama, PDC, bank..." class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-4 py-2 pl-10 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <!-- Search Box -->
+                        <div class="relative w-full md:w-80">
+                            <input type="text" id="searchHistory" placeholder="Cari No PDC, Customer, AO, Bank..." class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-2 pl-10 text-xs text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                             <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
                         </div>
                     </div>
 
-                    <div class="overflow-x-auto max-h-[500px] overflow-y-auto border border-slate-700/60 rounded-xl">
+                    <div class="overflow-x-auto max-h-[520px] overflow-y-auto border border-slate-800 rounded-xl">
                         <table class="w-full text-left text-xs text-slate-300 relative">
                             <thead class="bg-slate-900 text-slate-400 uppercase sticky top-0 z-10">
                                 <tr>
                                     <th class="py-3 px-4">No PDC</th>
                                     <th class="py-3 px-4">Atas Nama Rekening</th>
+                                    <th class="py-3 px-4">Marketing / AO</th>
                                     <th class="py-3 px-4">Nama Bank</th>
                                     <th class="py-3 px-4 text-right">Nominal PDC</th>
                                     <th class="py-3 px-4">Tgl PDC</th>
@@ -151,7 +178,7 @@
                                     <th class="py-3 px-4">Keterangan / Alasan</th>
                                 </tr>
                             </thead>
-                            <tbody id="tableHistoryBody" class="divide-y divide-slate-700/50">
+                            <tbody id="tableHistoryBody" class="divide-y divide-slate-800/60">
                                 <!-- Data History Diisi Lewat JavaScript -->
                             </tbody>
                         </table>
@@ -166,22 +193,56 @@
     <script>
         lucide.createIcons();
 
-        // URL CSV Google Sheet
-        const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/1blmL1pawujNDj_QVtnk7d7hq-U8LrAeEAfngdIzAyXE/export?format=csv&gid=0';
+        // URL CSV Google Sheets (Giro & AR)
+        const GIRO_CSV_URL = 'https://docs.google.com/spreadsheets/d/1blmL1pawujNDj_QVtnk7d7hq-U8LrAeEAfngdIzAyXE/export?format=csv&gid=0';
+        const AR_CSV_URL   = 'https://docs.google.com/spreadsheets/d/1blmL1pawujNDj_QVtnk7d7hq-U8LrAeEAfngdIzAyXE/export?format=csv&gid=471745175';
 
-        let rawData = [];
+        let giroData = [];
+        let customerAoMap = {}; // Key: Clean Customer Name -> User_AO
+        let customerStatusMap = {}; // Key: Clean Customer Name -> CONTRACT_STATUS
+        
         let bankChartInstance = null;
         let reasonChartInstance = null;
 
-        async function fetchSheetData() {
+        async function fetchAllSheetData() {
             try {
-                const response = await fetch(SHEET_CSV_URL);
-                const csvText = await response.text();
-                rawData = parseCSV(csvText);
+                // Fetch paralel sheet Giro dan sheet AR
+                const [giroRes, arRes] = await Promise.all([
+                    fetch(GIRO_CSV_URL),
+                    fetch(AR_CSV_URL)
+                ]);
+
+                const giroText = await giroRes.text();
+                const arText   = await arRes.text();
+
+                parseARData(arText);
+                giroData = parseCSV(giroText);
+
                 initDashboard();
             } catch (err) {
                 console.error("Gagal memuat data Google Sheets:", err);
             }
+        }
+
+        // Membersihkan nama dari PT / CV untuk pencocokan akurat
+        function cleanName(str) {
+            if (!str) return '';
+            return str.replace(/PT\s+/gi, '').replace(/CV\s+/gi, '').replace(/[^a-zA-Z0-9]/g, '').trim().toUpperCase();
+        }
+
+        // Parsing Sheet AR untuk mengambil USER_AO dan CONTRACT_STATUS
+        function parseARData(csvText) {
+            const rows = parseCSV(csvText);
+            rows.forEach(r => {
+                const name = cleanName(r['NAMA_CUSTOMER']);
+                const ao   = r['USER_AO'] || '-';
+                const status = r['CONTRACT_STATUS'] || '-';
+
+                if (name) {
+                    if (ao && ao !== '-') customerAoMap[name] = ao;
+                    if (status && status !== '-') customerStatusMap[name] = status;
+                }
+            });
         }
 
         function parseCSV(text) {
@@ -191,7 +252,7 @@
             const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
             
             return lines.slice(1).map(line => {
-                const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.trim().replace(/^"\vert{}"$/g, ''));
+                const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.trim().replace(/^"|"$/g, ''));
                 let obj = {};
                 headers.forEach((h, i) => {
                     obj[h] = values[i] || '';
@@ -201,6 +262,7 @@
         }
 
         function initDashboard() {
+            document.getElementById('filterContractStatus').addEventListener('change', updateDashboard);
             document.getElementById('filterTahun').addEventListener('change', updateDashboard);
             document.getElementById('filterBulan').addEventListener('change', updateDashboard);
             document.getElementById('searchHistory').addEventListener('input', renderHistoryTable);
@@ -209,41 +271,53 @@
         }
 
         function getFilteredData() {
-            const tahun = document.getElementById('filterTahun').value;
-            const bulan = document.getElementById('filterBulan').value;
+            const statusFilter = document.getElementById('filterContractStatus').value;
+            const tahunFilter  = document.getElementById('filterTahun').value;
+            const bulanFilter  = document.getElementById('filterBulan').value;
 
-            return rawData.filter(item => {
+            return giroData.filter(item => {
+                const cNameClean = cleanName(item['Atas Nama Rekening']);
+                const status = customerStatusMap[cNameClean] || 'AC';
+
                 const tglPDC = new Date(item['Tgl PDC']);
                 if (isNaN(tglPDC)) return false;
 
-                const matchTahun = (tahun === 'ALL') || (tglPDC.getFullYear().toString() === tahun);
-                const matchBulan = (bulan === 'ALL') || (tglPDC.getMonth().toString() === bulan);
+                const matchStatus = (statusFilter === 'ALL') || (status.toUpperCase() === statusFilter.toUpperCase());
+                const matchTahun  = (tahunFilter === 'ALL')  || (tglPDC.getFullYear().toString() === tahunFilter);
+                const matchBulan  = (bulanFilter === 'ALL')  || (tglPDC.getMonth().toString() === bulanFilter);
 
-                return matchTahun && matchBulan;
+                return matchStatus && matchTahun && matchBulan;
             });
         }
 
         function updateDashboard() {
             const data = getFilteredData();
-            renderBankChart(data);
-            renderReasonChart(data);
+            renderBankChart3D(data);
+            renderReasonChart3D(data);
             renderTopCustomerTable(data);
             renderHistoryTable();
         }
 
-        // Render Top 10 Bank Chart
-        function renderBankChart(data) {
+        // Render Top 5 Bank Chart dengan Style 3D/Glow
+        function renderBankChart3D(data) {
             const bankCounts = {};
             data.forEach(d => {
                 const bank = d['Nama Bank'] || 'Lainnya';
                 bankCounts[bank] = (bankCounts[bank] || 0) + 1;
             });
 
-            const sortedBanks = Object.entries(bankCounts).sort((a,b) => b[1] - a[1]).slice(0, 10);
+            const sortedBanks = Object.entries(bankCounts).sort((a,b) => b[1] - a[1]).slice(0, 5);
 
             if (bankChartInstance) bankChartInstance.destroy();
 
             const ctx = document.getElementById('bankChart').getContext('2d');
+            
+            // Efek Gradient Bar
+            const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+            gradient.addColorStop(0, '#818cf8');
+            gradient.addColorStop(0.5, '#4338ca');
+            gradient.addColorStop(1, '#1e1b4b');
+
             bankChartInstance = new Chart(ctx, {
                 type: 'bar',
                 data: {
@@ -251,24 +325,39 @@
                     datasets: [{
                         label: 'Frekuensi Tolakan',
                         data: sortedBanks.map(b => b[1]),
-                        backgroundColor: '#6366f1',
-                        borderRadius: 6
+                        backgroundColor: gradient,
+                        borderColor: '#a5b4fc',
+                        borderWidth: 1.5,
+                        borderRadius: 12,
+                        shadowOffsetX: 3,
+                        shadowOffsetY: 3,
+                        shadowBlur: 10,
+                        shadowColor: 'rgba(0, 0, 0, 0.5)'
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
+                    plugins: { 
+                        legend: { display: false },
+                        datalabels: {
+                            anchor: 'end',
+                            align: 'top',
+                            color: '#e2e8f0',
+                            font: { weight: 'bold', size: 11 }
+                        }
+                    },
                     scales: {
-                        x: { ticks: { color: '#94a3b8' }, grid: { display: false } },
-                        y: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } }
+                        x: { ticks: { color: '#94a3b8', font: { weight: '600' } }, grid: { display: false } },
+                        y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(51, 65, 85, 0.4)' } }
                     }
-                }
+                },
+                plugins: [ChartDataLabels]
             });
         }
 
-        // Render Pie Chart Kriteria Alasan (Persentase)
-        function renderReasonChart(data) {
+        // Render Pie/Doughnut Chart Alasan Tolakan (Visual 3D & Pop-out)
+        function renderReasonChart3D(data) {
             let danaTdkCukup = 0;
             let asuransiSpecial = 0;
             let alasanLainnya = 0;
@@ -287,6 +376,7 @@
             if (reasonChartInstance) reasonChartInstance.destroy();
 
             const ctx = document.getElementById('reasonChart').getContext('2d');
+
             reasonChartInstance = new Chart(ctx, {
                 type: 'doughnut',
                 plugins: [ChartDataLabels],
@@ -294,24 +384,39 @@
                     labels: ['Dana Tidak Cukup', 'Asuransi / Tolakan Khusus', 'Alasan Lainnya'],
                     datasets: [{
                         data: [danaTdkCukup, asuransiSpecial, alasanLainnya],
-                        backgroundColor: ['#f43f5e', '#fbbf24', '#3b82f6']
+                        backgroundColor: [
+                            '#f43f5e', // Red Glow
+                            '#f59e0b', // Amber/Gold 3D
+                            '#3b82f6'  // Blue Gloss
+                        ],
+                        hoverBackgroundColor: [
+                            '#fb7185',
+                            '#fbbf24',
+                            '#60a5fa'
+                        ],
+                        borderColor: '#0f172a',
+                        borderWidth: 3,
+                        hoverOffset: 12
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    cutout: '65%',
                     plugins: {
-                        legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 11 } } },
+                        legend: { 
+                            position: 'bottom', 
+                            labels: { color: '#cbd5e1', font: { size: 11, weight: '500' }, padding: 16 } 
+                        },
                         datalabels: {
                             color: '#ffffff',
                             font: { weight: 'bold', size: 12 },
                             formatter: (value, ctx) => {
                                 let sum = 0;
                                 let dataArr = ctx.chart.data.datasets[0].data;
-                                dataArr.map(data => { sum += data; });
+                                dataArr.map(d => { sum += d; });
                                 if (sum === 0) return '0%';
-                                let percentage = (value * 100 / sum).toFixed(1) + "%";
-                                return percentage;
+                                return ((value * 100) / sum).toFixed(1) + "%";
                             }
                         }
                     }
@@ -319,23 +424,24 @@
             });
         }
 
-        // Render Table Top 10 Customer (>3x Tolakan)
+        // Render Top 10 Customer >= 3x dengan Nama Marketing / USER_AO
         function renderTopCustomerTable(data) {
             const customerMap = {};
 
             data.forEach(d => {
-                const name = d['Atas Nama Rekening'];
-                if (!name) return;
+                const rawName = d['Atas Nama Rekening'];
+                if (!rawName) return;
 
-                if (!customerMap[name]) {
-                    customerMap[name] = { name: name, count: 0, items: [] };
+                if (!customerMap[rawName]) {
+                    customerMap[rawName] = { name: rawName, count: 0, items: [] };
                 }
 
-                customerMap[name].count += 1;
-                customerMap[name].items.push(d);
+                customerMap[rawName].count += 1;
+                customerMap[rawName].items.push(d);
             });
 
-            let highRiskList = Object.values(customerMap).filter(c => c.count > 3);
+            // Logika >= 3x (Sesuai instruksi Poin 4)
+            let highRiskList = Object.values(customerMap).filter(c => c.count >= 3);
             highRiskList.sort((a, b) => b.count - a.count);
             highRiskList = highRiskList.slice(0, 10);
 
@@ -343,11 +449,14 @@
             tbody.innerHTML = '';
 
             if (highRiskList.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="4" class="text-center py-6 text-slate-500">Tidak ada customer dengan tolakan >3x pada periode filter ini.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-slate-500">Tidak ada customer dengan tolakan &ge; 3x pada filter ini.</td></tr>`;
                 return;
             }
 
             highRiskList.forEach(c => {
+                const cClean = cleanName(c.name);
+                const userAo = customerAoMap[cClean] || '-';
+
                 const sortedItems = c.items.sort((a, b) => new Date(b['Tgl PDC']) - new Date(a['Tgl PDC'])).slice(0, 3);
                 
                 const datesInfo = sortedItems.map(item => 
@@ -357,11 +466,12 @@
                 const reason = sortedItems[0]['Keterangan'] || '-';
 
                 const tr = document.createElement('tr');
-                tr.className = "hover:bg-slate-800/50 transition-colors";
+                tr.className = "hover:bg-slate-800/60 transition-colors";
                 tr.innerHTML = `
                     <td class="py-4 px-4 font-semibold text-white">${c.name}</td>
+                    <td class="py-4 px-4 font-medium text-indigo-300">${userAo}</td>
                     <td class="py-4 px-4 text-center">
-                        <span class="bg-rose-500/10 text-rose-400 border border-rose-500/20 px-2.5 py-1 rounded-full text-xs font-bold">${c.count}x</span>
+                        <span class="bg-rose-500/20 text-rose-300 border border-rose-500/30 px-3 py-1 rounded-full text-xs font-bold">${c.count}x</span>
                     </td>
                     <td class="py-4 px-4">${datesInfo}</td>
                     <td class="py-4 px-4 text-slate-300">${reason}</td>
@@ -370,13 +480,15 @@
             });
         }
 
-        // Render Table History Data Gabungan
+        // Render Table History Data Giro
         function renderHistoryTable() {
             const data = getFilteredData();
             const keyword = document.getElementById('searchHistory').value.toLowerCase();
 
             const filteredHistory = data.filter(item => {
-                const searchStr = `${item['No PDC']} ${item['Atas Nama Rekening']} ${item['Nama Bank']} ${item['Keterangan']}`.toLowerCase();
+                const cClean = cleanName(item['Atas Nama Rekening']);
+                const userAo = customerAoMap[cClean] || '';
+                const searchStr = `${item['No PDC']} ${item['Atas Nama Rekening']} ${userAo} ${item['Nama Bank']} ${item['Keterangan']}`.toLowerCase();
                 return searchStr.includes(keyword);
             });
 
@@ -384,16 +496,20 @@
             tbody.innerHTML = '';
 
             if (filteredHistory.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-slate-500">Data history tidak ditemukan.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-slate-500">Data history tidak ditemukan.</td></tr>`;
                 return;
             }
 
             filteredHistory.forEach(item => {
+                const cClean = cleanName(item['Atas Nama Rekening']);
+                const userAo = customerAoMap[cClean] || '-';
+
                 const tr = document.createElement('tr');
-                tr.className = "hover:bg-slate-800/40 transition-colors";
+                tr.className = "hover:bg-slate-800/50 transition-colors";
                 tr.innerHTML = `
                     <td class="py-2.5 px-4 font-mono text-indigo-300">${item['No PDC'] || '-'}</td>
                     <td class="py-2.5 px-4 font-medium text-white">${item['Atas Nama Rekening'] || '-'}</td>
+                    <td class="py-2.5 px-4 font-medium text-indigo-400">${userAo}</td>
                     <td class="py-2.5 px-4 text-slate-300">${item['Nama Bank'] || '-'}</td>
                     <td class="py-2.5 px-4 text-right font-mono text-emerald-400">${item[' Nominal PDC '] || item['Nominal PDC'] || '-'}</td>
                     <td class="py-2.5 px-4 text-slate-300">${item['Tgl PDC'] || '-'}</td>
@@ -404,7 +520,7 @@
             });
         }
 
-        fetchSheetData();
+        fetchAllSheetData();
     </script>
 </body>
 </html>
