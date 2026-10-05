@@ -1,199 +1,4 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Monitoring Tolakan Giro</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Chart.js & Chart.js DataLabels Plugin -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; }
-        
-        .glass-card {
-            background: rgba(30, 41, 59, 0.7);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
-        }
-    </style>
-</head>
-<body class="bg-slate-950 text-slate-100 min-h-screen">
-
-    <div class="flex h-screen overflow-hidden">
-        <div class="flex-1 flex flex-col overflow-y-auto">
-            
-            <!-- Header -->
-            <header class="bg-slate-900/90 border-b border-slate-800 px-8 py-5 flex flex-wrap justify-between items-center sticky top-0 z-20 shadow-xl backdrop-blur-md gap-4">
-                <div>
-                    <h1 class="text-2xl font-bold text-white flex items-center gap-2">
-                        <i data-lucide="layout-dashboard" class="text-indigo-400"></i>
-                        Dashboard Monitoring Tolakan Giro
-                    </h1>
-                    <p class="text-xs text-slate-400 mt-1">Analisis Frekuensi & Alasan Tolakan Giro Debitur</p>
-                </div>
-                
-                <!-- Filter Controls -->
-                <div class="flex flex-wrap items-center gap-3 bg-slate-900 p-2 rounded-xl border border-slate-800">
-                    <div class="flex items-center gap-2 px-2">
-                        <i data-lucide="filter" class="w-4 h-4 text-indigo-400"></i>
-                        <span class="text-xs font-semibold text-slate-300">Filter:</span>
-                    </div>
-                    
-                    <!-- Filter Status Kontrak -->
-                    <select id="filterContractStatus" class="bg-slate-800 text-slate-200 text-xs border border-slate-700 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium">
-                        <option value="ALL">Semua Status Kontrak</option>
-                        <option value="AC">AC (Active)</option>
-                        <option value="PT">PT (Paid Off)</option>
-                        <option value="CL">CL (Closed)</option>
-                        <option value="RP">RP (Repo)</option>
-                    </select>
-
-                    <!-- Filter Tahun -->
-                    <select id="filterTahun" class="bg-slate-800 text-slate-200 text-xs border border-slate-700 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium">
-                        <option value="ALL">Semua Tahun</option>
-                        <option value="2025">2025</option>
-                        <option value="2026">2026</option>
-                    </select>
-
-                    <!-- Filter Bulan -->
-                    <select id="filterBulan" class="bg-slate-800 text-slate-200 text-xs border border-slate-700 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium">
-                        <option value="ALL">Semua Bulan</option>
-                        <option value="0">Januari</option>
-                        <option value="1">Februari</option>
-                        <option value="2">Maret</option>
-                        <option value="3">April</option>
-                        <option value="4">Mei</option>
-                        <option value="5">Juni</option>
-                        <option value="6">Juli</option>
-                        <option value="7">Agustus</option>
-                        <option value="8">September</option>
-                        <option value="9">Oktober</option>
-                        <option value="10">November</option>
-                        <option value="11">Desember</option>
-                    </select>
-                </div>
-            </header>
-
-            <!-- Dashboard Content -->
-            <main class="p-8 space-y-8">
-
-                <!-- Visual Charts Section -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    
-                    <!-- Top 5 Bank Chart -->
-                    <div class="glass-card rounded-2xl p-6">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-base font-semibold text-white flex items-center gap-2">
-                                <i data-lucide="landmark" class="text-indigo-400 w-5 h-5"></i>
-                                Top 5 Bank Tolakan Giro Terbanyak
-                            </h3>
-                            <span class="text-xs bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2.5 py-1 rounded-full font-medium">Top 5 Only</span>
-                        </div>
-                        <div class="relative h-72">
-                            <canvas id="bankChart"></canvas>
-                        </div>
-                    </div>
-
-                    <!-- Alasan Tolakan Chart -->
-                    <div class="glass-card rounded-2xl p-6">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-base font-semibold text-white flex items-center gap-2">
-                                <i data-lucide="pie-chart" class="text-rose-400 w-5 h-5"></i>
-                                Distribusi Persentase Alasan Tolakan
-                            </h3>
-                            <span class="text-xs bg-rose-500/10 text-rose-400 border border-rose-500/20 px-2.5 py-1 rounded-full font-medium">Kriteria Utama</span>
-                        </div>
-                        <div class="relative h-72 flex items-center justify-center">
-                            <canvas id="reasonChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Section: Top 10 Customer Tolakan Giro -->
-                <div class="glass-card rounded-2xl p-6">
-                    <div class="flex justify-between items-center mb-6">
-                        <div>
-                            <h3 class="text-lg font-semibold text-white flex items-center gap-2">
-                                <i data-lucide="alert-triangle" class="text-amber-400"></i>
-                                Top 10 Customer Tolakan Giro
-                            </h3>
-                            <p class="text-xs text-slate-400 mt-1">Pelanggan dengan frekuensi tolakan tertinggi beserta informasi tunggakan & status kontrak</p>
-                        </div>
-                    </div>
-
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left text-xs text-slate-300">
-                            <thead class="bg-slate-900/80 text-slate-400 uppercase text-[11px] tracking-wider">
-                                <tr>
-                                    <th class="py-3 px-3 rounded-l-lg">Nama Customer / Rekening</th>
-                                    <th class="py-3 px-3">Marketing / AO</th>
-                                    <th class="py-3 px-2 text-center">Status</th>
-                                    <th class="py-3 px-2 text-center">Frek.</th>
-                                    <th class="py-3 px-2 text-center">Inst Ke</th>
-                                    <th class="py-3 px-2 text-center">Sch Ke</th>
-                                    <th class="py-3 px-2 text-center">Ovd Days</th>
-                                    <th class="py-3 px-3 text-right">Overdue Amount</th>
-                                    <th class="py-3 px-3">3 Tgl PDC & Tolakan</th>
-                                    <th class="py-3 px-3 rounded-r-lg">Alasan Utama</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tableCustomerBody" class="divide-y divide-slate-800">
-                                <!-- Data Diisi Lewat JavaScript -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Section: History Data Giro -->
-                <div class="glass-card rounded-2xl p-6">
-                    <div class="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-6">
-                        <div>
-                            <h3 class="text-lg font-semibold text-white flex items-center gap-2">
-                                <i data-lucide="database" class="text-emerald-400"></i>
-                                History Data Giro
-                            </h3>
-                            <p class="text-xs text-slate-400 mt-1">Rekap seluruh catatan transaksi giro beserta rincian Marketing/AO</p>
-                        </div>
-                        
-                        <!-- Search Box -->
-                        <div class="relative w-full md:w-80">
-                            <input type="text" id="searchHistory" placeholder="Cari No PDC, Customer, AO, Bank..." class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-2 pl-10 text-xs text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
-                        </div>
-                    </div>
-
-                    <div class="overflow-x-auto max-h-[520px] overflow-y-auto border border-slate-800 rounded-xl">
-                        <table class="w-full text-left text-xs text-slate-300 relative">
-                            <thead class="bg-slate-900 text-slate-400 uppercase sticky top-0 z-10">
-                                <tr>
-                                    <th class="py-3 px-4">No PDC</th>
-                                    <th class="py-3 px-4">Atas Nama Rekening</th>
-                                    <th class="py-3 px-4">Marketing / AO</th>
-                                    <th class="py-3 px-4">Nama Bank</th>
-                                    <th class="py-3 px-4 text-right">Nominal PDC</th>
-                                    <th class="py-3 px-4">Tgl PDC</th>
-                                    <th class="py-3 px-4">Tgl Tolakan</th>
-                                    <th class="py-3 px-4">Keterangan / Alasan</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tableHistoryBody" class="divide-y divide-slate-800/60">
-                                <!-- Data History Diisi Lewat JavaScript -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-            </main>
-        </div>
-    </div>
-
-    <!-- Script Application -->
+<!-- Script Application -->
     <script>
         lucide.createIcons();
 
@@ -205,7 +10,6 @@
         let arDataList = [];
         let customerAoMap = {}; 
         let customerStatusMap = {}; 
-        let customerArDetailMap = {}; // Menampung rincian tambahan dari AR
         
         let bankChartInstance = null;
         let reasonChartInstance = null;
@@ -229,9 +33,17 @@
             }
         }
 
+        // Membersihkan nama dari PT/CV dan simbol
         function cleanName(str) {
             if (!str) return '';
             return str.replace(/PT\s+/gi, '').replace(/CV\s+/gi, '').replace(/[^a-zA-Z0-9\s]/g, '').trim().toUpperCase();
+        }
+
+        // Standarisasi nilai agar angka kosong/strip (-) berubah menjadi 0
+        function sanitizeNumber(val) {
+            if (!val || val === '-' || val === ' - ' || val.toString().trim() === '') return '0';
+            const cleanVal = val.toString().replace(/[^0-9.-]+/g, "").trim();
+            return cleanVal === '' ? '0' : cleanVal;
         }
 
         function parseARData(csvText) {
@@ -245,50 +57,39 @@
                 if (cleaned) {
                     if (ao && ao !== '-') customerAoMap[cleaned] = ao;
                     if (status && status !== '-') customerStatusMap[cleaned] = status;
-
-                    if (!customerArDetailMap[cleaned]) {
-                        customerArDetailMap[cleaned] = {
-                            instKe: r['INST_KE'] || '-',
-                            schKe: r['SCH_KE'] || '-',
-                            ovdDays: r['OVD_DAYS'] || r[' OVD_DAYS '] || '0',
-                            ovdAmount: r['OVERDUE_AMOUNT'] || r[' OVERDUE_AMOUNT '] || '0',
-                            status: status
-                        };
-                    }
                 }
             });
         }
 
-        // Pencarian Detail Customer dari AR
+        // Logika Fuzzy Matching yang Ditingkatkan (Mengatasi MENDAYU vs MEDAYU)
         function getCustomerARInfo(rawGiroName, sampleGiroItem) {
             const cleanedGiro = cleanName(rawGiroName);
             
-            // 1. Coba pencocokan langsung
+            // 1. Coba Match Persis
             let arMatch = arDataList.find(item => cleanName(item['NAMA_CUSTOMER']) === cleanedGiro);
 
-            // 2. Jika tidak ada, coba fuzzy match
+            // 2. Fuzzy Match (Ambil kata kunci pertama dan kata kedua)
             if (!arMatch) {
-                const words = cleanedGiro.split(/\s+/).filter(w => w.length > 2);
-                if (words.length >= 2) {
-                    const k1 = words[0];
-                    const k2 = words[1].substring(0, 4);
+                const words = cleanedGiro.split(/\s+/).filter(w => w.length >= 3);
+                if (words.length >= 1) {
+                    const firstWord = words[0]; // Misal: BARANA
                     arMatch = arDataList.find(item => {
                         const arClean = cleanName(item['NAMA_CUSTOMER']);
-                        return arClean.includes(k1) && arClean.includes(k2);
+                        return arClean.includes(firstWord);
                     });
                 }
             }
 
-            // Ambil data fallback dari Giro jika dari AR tidak ketemu
-            const instKe = arMatch ? (arMatch['INST_KE'] || '-') : (sampleGiroItem['Inst_Ke'] || sampleGiroItem['Inst_ke'] || '-');
-            const schKe = arMatch ? (arMatch['SCH_KE'] || '-') : (sampleGiroItem['Sch_Ke'] || sampleGiroItem['Sch_ke'] || '-');
-            const ovdDays = arMatch ? (arMatch['OVD_DAYS'] || arMatch[' OVD_DAYS '] || '0') : (sampleGiroItem['Ovd_Days'] || '0');
-            const ovdAmount = arMatch ? (arMatch['OVERDUE_AMOUNT'] || arMatch[' OVERDUE_AMOUNT '] || '0') : '0';
+            // Ambil data dan terapkan penyetaraan ke '0' untuk angka strip/kosong
+            const instKe = sanitizeNumber(arMatch ? arMatch['INST_KE'] : (sampleGiroItem['Inst_Ke'] || sampleGiroItem['Inst_ke']));
+            const schKe = sanitizeNumber(arMatch ? arMatch['SCH_KE'] : (sampleGiroItem['Sch_Ke'] || sampleGiroItem['Sch_ke']));
+            const ovdDays = sanitizeNumber(arMatch ? (arMatch['OVD_DAYS'] || arMatch[' OVD_DAYS ']) : sampleGiroItem['Ovd_Days']);
+            const ovdAmount = sanitizeNumber(arMatch ? (arMatch['OVERDUE_AMOUNT'] || arMatch[' OVERDUE_AMOUNT ']) : '0');
             const status = arMatch ? (arMatch['CONTRACT_STATUS'] || 'AC') : 'AC';
             const userAo = arMatch ? (arMatch['USER_AO'] || '-') : (customerAoMap[cleanedGiro] || '-');
 
             return {
-                userAo,
+                userAo: (userAo === '' || userAo === null) ? '-' : userAo,
                 status,
                 instKe,
                 schKe,
@@ -304,7 +105,7 @@
             const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
             
             return lines.slice(1).map(line => {
-                const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.trim().replace(/^"|"$/g, ''));
+                const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.trim().replace(/^"\vert{}"$/g, ''));
                 let obj = {};
                 headers.forEach((h, i) => {
                     obj[h] = values[i] || '';
@@ -458,15 +259,12 @@
             });
         }
 
-        // Format angka mata uang Rp
         function formatCurrency(val) {
-            if (!val || val === '-' || val === '0') return 'Rp 0';
-            const num = parseFloat(val.toString().replace(/[^0-9.-]+/g,""));
-            if (isNaN(num)) return val;
+            const num = parseFloat(val);
+            if (isNaN(num) || num === 0) return 'Rp 0';
             return 'Rp ' + num.toLocaleString('id-ID');
         }
 
-        // Render Top 10 Customer dengan Kolom Baru
         function renderTopCustomerTable(data) {
             const customerMap = {};
 
@@ -506,7 +304,6 @@
 
                 const reason = sortedItems[0]['Keterangan'] || '-';
 
-                // Status Badge Color
                 let statusBadge = `<span class="bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded text-[10px] font-bold">${info.status}</span>`;
                 if (info.status === 'PT') statusBadge = `<span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded text-[10px] font-bold">PT</span>`;
                 if (info.status === 'CL') statusBadge = `<span class="bg-slate-500/20 text-slate-300 border border-slate-500/30 px-2 py-0.5 rounded text-[10px] font-bold">CL</span>`;
@@ -571,5 +368,3 @@
 
         fetchAllSheetData();
     </script>
-</body>
-</html>
