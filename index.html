@@ -107,7 +107,6 @@
                     <!-- 2. Ringkasan KPI di Tengah -->
                     <div class="glass-card rounded-2xl p-5 lg:col-span-2 flex flex-col justify-between gap-4 border border-indigo-500/20 bg-slate-900/80">
                         <div class="text-center pb-2 border-b border-slate-800">
-                            <!-- Header Terbaru: SUMMARY -->
                             <span class="text-[11px] font-bold tracking-wider uppercase text-slate-300">SUMMARY</span>
                         </div>
 
@@ -152,19 +151,46 @@
 
                 </div>
 
-                <!-- Section Baru: Grafik Tren Persentase Tolakan 12 Bulan (Horizontal Bar Chart) -->
+                <!-- Section: Grafik Vertikal Simpel + Informasi Perbandingan YoY -->
                 <div class="glass-card rounded-2xl p-6">
-                    <div class="flex justify-between items-center mb-4">
+                    <div class="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-6">
                         <div>
                             <h3 class="text-base font-semibold text-white flex items-center gap-2">
-                                <i data-lucide="trending-up" class="text-emerald-400 w-5 h-5"></i>
+                                <i data-lucide="trending-up" class="text-indigo-400 w-5 h-5"></i>
                                 Tren Persentase Tolakan Giro Bulanan (12 Bulan)
                             </h3>
-                            <p class="text-xs text-slate-400 mt-1">Analisis porsi kontribusi tolakan bulanan terhadap total tolakan tahunan</p>
+                            <p class="text-xs text-slate-400 mt-1">Distribusi persentase tolakan setiap bulan dalam satu tahun berjalan</p>
                         </div>
-                        <span id="monthlyYearBadge" class="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-full font-medium">Tahun: Semua</span>
+
+                        <!-- Informasi Ringkasan YoY (Year-over-Year) -->
+                        <div class="flex items-center gap-3 bg-slate-900/90 p-3 rounded-xl border border-slate-800">
+                            <!-- Periode Saat Ini -->
+                            <div class="text-right px-2">
+                                <p class="text-[10px] text-slate-400 font-semibold uppercase">Filter Ini</p>
+                                <p id="yoyCurrentVal" class="text-sm font-bold text-white">0 Giro</p>
+                            </div>
+                            
+                            <div class="h-8 w-[1px] bg-slate-800"></div>
+
+                            <!-- Periode Pembanding YoY -->
+                            <div class="text-right px-2">
+                                <p class="text-[10px] text-slate-400 font-semibold uppercase">Thn Lalu (YoY)</p>
+                                <p id="yoyPrevVal" class="text-sm font-bold text-slate-400">0 Giro</p>
+                            </div>
+
+                            <div class="h-8 w-[1px] bg-slate-800"></div>
+
+                            <!-- Badge Perbandingan YoY (Merah jika lebih besar, Hijau jika lebih kecil) -->
+                            <div id="yoyBadgeContainer" class="px-2">
+                                <span id="yoyBadge" class="px-2.5 py-1 rounded-lg text-xs font-bold border flex items-center gap-1 bg-slate-800 text-slate-400 border-slate-700">
+                                    0% YoY
+                                </span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="relative h-80">
+
+                    <!-- Area Grafik Vertikal Simpel -->
+                    <div class="relative h-64">
                         <canvas id="monthlyTrendChart"></canvas>
                     </div>
                 </div>
@@ -398,7 +424,7 @@
             renderKPICards(data);
             renderBankChart3D(data);
             renderReasonChart3D(data);
-            renderMonthlyTrendChart();
+            renderMonthlyTrendVerticalChart(data);
             renderTopCustomerTable(data);
             renderHistoryTable();
             renderIcons();
@@ -537,16 +563,16 @@
             });
         }
 
-        // Render Grafik Horizontal Tren Tolakan Bulanan (12 Bulan)
-        function renderMonthlyTrendChart() {
+        // Render Grafik Vertikal Simpel + Perbandingan YoY Dinamis (Merah/Hijau)
+        function renderMonthlyTrendVerticalChart(currentFilteredData) {
             const statusFilter = document.getElementById('filterContractStatus').value;
             const tahunFilter  = document.getElementById('filterTahun').value;
+            const bulanFilter  = document.getElementById('filterBulan').value;
 
-            document.getElementById('monthlyYearBadge').innerText = `Tahun: ${tahunFilter === 'ALL' ? 'Semua' : tahunFilter}`;
-
-            const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+            const monthsShort = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'];
             const monthlyCounts = new Array(12).fill(0);
 
+            // Filter data tahun aktif
             let baseYearData = giroData.filter(item => {
                 const info = getCustomerARInfo(item['Atas Nama Rekening'], item);
                 const tglPDC = new Date(item['Tgl PDC']);
@@ -572,52 +598,96 @@
                 return parseFloat(((count / totalYearTolakan) * 100).toFixed(1));
             });
 
+            // HITUNG PERBANDINGAN YOY (Tahun Ini vs Tahun Lalu)
+            const currentCount = currentFilteredData.length;
+            
+            // Cari data tahun lalu
+            let prevYear = (tahunFilter === 'ALL') ? 2025 : parseInt(tahunFilter) - 1;
+            let prevYearData = giroData.filter(item => {
+                const info = getCustomerARInfo(item['Atas Nama Rekening'], item);
+                const tglPDC = new Date(item['Tgl PDC']);
+                if (isNaN(tglPDC)) return false;
+
+                const matchStatus = (statusFilter === 'ALL') || (info.status.toUpperCase() === statusFilter.toUpperCase());
+                const matchTahun  = (tglPDC.getFullYear() === prevYear);
+                const matchBulan  = (bulanFilter === 'ALL') || (tglPDC.getMonth().toString() === bulanFilter);
+
+                return matchStatus && matchTahun && matchBulan;
+            });
+
+            const prevCount = prevYearData.length;
+
+            document.getElementById('yoyCurrentVal').innerText = `${currentCount} Giro`;
+            document.getElementById('yoyPrevVal').innerText = `${prevCount} Giro`;
+
+            // Hitung Persentase Perubahan YoY
+            let yoyBadgeHTML = '';
+            if (prevCount === 0) {
+                if (currentCount > 0) {
+                    yoyBadgeHTML = `<span class="px-2.5 py-1 rounded-lg text-xs font-bold border flex items-center gap-1 bg-rose-500/20 text-rose-400 border-rose-500/30">+100% YoY (Memburuk)</span>`;
+                } else {
+                    yoyBadgeHTML = `<span class="px-2.5 py-1 rounded-lg text-xs font-bold border flex items-center gap-1 bg-slate-800 text-slate-400 border-slate-700">0% YoY</span>`;
+                }
+            } else {
+                const diffPct = (((currentCount - prevCount) / prevCount) * 100).toFixed(1);
+                
+                if (diffPct > 0) {
+                    // Kenaikan Tolakan = MERAH (Memburuk)
+                    yoyBadgeHTML = `<span class="px-2.5 py-1 rounded-lg text-xs font-bold border flex items-center gap-1 bg-rose-500/20 text-rose-400 border-rose-500/30">+${diffPct}% YoY (Naik)</span>`;
+                } else if (diffPct < 0) {
+                    // Penurunan Tolakan = HIJAU (Membaik)
+                    yoyBadgeHTML = `<span class="px-2.5 py-1 rounded-lg text-xs font-bold border flex items-center gap-1 bg-emerald-500/20 text-emerald-400 border-emerald-500/30">${diffPct}% YoY (Turun)</span>`;
+                } else {
+                    yoyBadgeHTML = `<span class="px-2.5 py-1 rounded-lg text-xs font-bold border flex items-center gap-1 bg-slate-800 text-slate-400 border-slate-700">0% YoY</span>`;
+                }
+            }
+            document.getElementById('yoyBadgeContainer').innerHTML = yoyBadgeHTML;
+
+            // Render Grafik Vertikal
             if (monthlyChartInstance) monthlyChartInstance.destroy();
 
             const ctx = document.getElementById('monthlyTrendChart').getContext('2d');
-            const gradient = ctx.createLinearGradient(0, 0, 400, 0);
-            gradient.addColorStop(0, '#10b981');
-            gradient.addColorStop(0.5, '#3b82f6');
-            gradient.addColorStop(1, '#6366f1');
+            const gradient = ctx.createLinearGradient(0, 0, 0, 200);
+            gradient.addColorStop(0, '#818cf8');
+            gradient.addColorStop(1, '#312e81');
 
             monthlyChartInstance = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: months,
+                    labels: monthsShort,
                     datasets: [{
                         label: 'Persentase Tolakan (%)',
                         data: monthlyPercentages,
                         backgroundColor: gradient,
-                        borderColor: '#34d399',
+                        borderColor: '#6366f1',
                         borderWidth: 1,
-                        borderRadius: 8
+                        borderRadius: 6
                     }]
                 },
                 options: {
-                    indexAxis: 'y', // Mengubah menjadi Grafik Horizontal
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
                         legend: { display: false },
                         datalabels: {
                             anchor: 'end',
-                            align: 'right',
-                            color: '#e2e8f0',
+                            align: 'top',
+                            color: '#cbd5e1',
                             font: { weight: 'bold', size: 10 },
-                            formatter: (value) => value + '%'
+                            formatter: (val) => val > 0 ? val + '%' : ''
                         }
                     },
                     scales: {
                         x: {
-                            ticks: { 
-                                color: '#94a3b8',
-                                callback: function(value) { return value + '%'; }
-                            },
-                            grid: { color: 'rgba(51, 65, 85, 0.4)' }
+                            ticks: { color: '#94a3b8', font: { weight: '600', size: 11 } },
+                            grid: { display: false }
                         },
                         y: {
-                            ticks: { color: '#cbd5e1', font: { weight: '600', size: 11 } },
-                            grid: { display: false }
+                            ticks: { 
+                                color: '#64748b',
+                                callback: (val) => val + '%'
+                            },
+                            grid: { color: 'rgba(51, 65, 85, 0.3)' }
                         }
                     }
                 },
