@@ -6,8 +6,9 @@
     <title>Dashboard Monitoring Tolakan Giro</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Chart.js -->
+    <!-- Chart.js & Chart.js DataLabels Plugin -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
@@ -17,14 +18,11 @@
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen">
 
-    <!-- Sidebar / Navigation -->
     <div class="flex h-screen overflow-hidden">
-        
-        <!-- Main Content -->
         <div class="flex-1 flex flex-col overflow-y-auto">
             
             <!-- Header -->
-            <header class="bg-slate-800 border-b border-slate-700 px-8 py-5 flex justify-between items-center sticky top-0 z-10 shadow-lg">
+            <header class="bg-slate-800 border-b border-slate-700 px-8 py-5 flex justify-between items-center sticky top-0 z-20 shadow-lg">
                 <div>
                     <h1 class="text-2xl font-bold text-white flex items-center gap-2">
                         <i data-lucide="layout-dashboard" class="text-indigo-400"></i>
@@ -40,14 +38,12 @@
                         <span class="text-xs font-semibold text-slate-300">Filter:</span>
                     </div>
                     
-                    <!-- Filter Tahun -->
                     <select id="filterTahun" class="bg-slate-800 text-slate-200 text-sm border border-slate-700 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500">
                         <option value="ALL">Semua Tahun</option>
                         <option value="2025">2025</option>
                         <option value="2026">2026</option>
                     </select>
 
-                    <!-- Filter Bulan -->
                     <select id="filterBulan" class="bg-slate-800 text-slate-200 text-sm border border-slate-700 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500">
                         <option value="ALL">Semua Bulan</option>
                         <option value="0">Januari</option>
@@ -69,48 +65,6 @@
             <!-- Dashboard Content -->
             <main class="p-8 space-y-8">
 
-                <!-- Summary Cards -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <!-- Card 1: Total Customer -->
-                    <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-6 relative overflow-hidden backdrop-blur-xl">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <p class="text-sm font-medium text-slate-400">Total Customer (Unik)</p>
-                                <h3 id="statTotalCustomer" class="text-3xl font-bold text-white mt-2">0</h3>
-                            </div>
-                            <div class="p-3 bg-indigo-500/10 rounded-xl text-indigo-400">
-                                <i data-lucide="users"></i>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Card 2: Total Transaksi Tolakan -->
-                    <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-6 relative overflow-hidden backdrop-blur-xl">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <p class="text-sm font-medium text-slate-400">Total Kejadian Tolakan</p>
-                                <h3 id="statTotalTolakan" class="text-3xl font-bold text-rose-400 mt-2">0</h3>
-                            </div>
-                            <div class="p-3 bg-rose-500/10 rounded-xl text-rose-400">
-                                <i data-lucide="alert-circle"></i>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Card 3: High Risk Customers (>3x/Bulan) -->
-                    <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-6 relative overflow-hidden backdrop-blur-xl">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <p class="text-sm font-medium text-slate-400">Customer Risk Tinggi (>3x/Bln)</p>
-                                <h3 id="statHighRisk" class="text-3xl font-bold text-amber-400 mt-2">0</h3>
-                            </div>
-                            <div class="p-3 bg-amber-500/10 rounded-xl text-amber-400">
-                                <i data-lucide="shield-alert"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- Charts Section -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     
@@ -125,11 +79,11 @@
                         </div>
                     </div>
 
-                    <!-- Alasan Tolakan Chart -->
+                    <!-- Alasan Tolakan Chart (Persentase Kriteria) -->
                     <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-6 backdrop-blur-xl">
                         <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
                             <i data-lucide="pie-chart" class="text-indigo-400"></i>
-                            Distribusi Alasan Tolakan
+                            Distribusi Persentase Alasan Tolakan
                         </h3>
                         <div class="relative h-72">
                             <canvas id="reasonChart"></canvas>
@@ -137,7 +91,7 @@
                     </div>
                 </div>
 
-                <!-- Table: Top 10 High Frequency Customers -->
+                <!-- Section: Top 10 Customer >3x / Bulan -->
                 <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-6 backdrop-blur-xl">
                     <div class="flex justify-between items-center mb-6">
                         <div>
@@ -145,7 +99,7 @@
                                 <i data-lucide="alert-triangle" class="text-amber-400"></i>
                                 Top 10 Customer dengan Tolakan >3x / Bulan
                             </h3>
-                            <p class="text-xs text-slate-400 mt-1">Termasuk breakdown 3 tanggal PDC & tolakan terupdate serta alasannya</p>
+                            <p class="text-xs text-slate-400 mt-1">Rincian 3 tanggal PDC, tanggal tolakan terupdate, dan alasan utama tolakan</p>
                         </div>
                     </div>
 
@@ -160,7 +114,45 @@
                                 </tr>
                             </thead>
                             <tbody id="tableCustomerBody" class="divide-y divide-slate-700/50">
-                                <!-- Dynamic Data Inserted Here -->
+                                <!-- Data Diisi Lewat JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Section: History Data Gabungan Google Sheet -->
+                <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-6 backdrop-blur-xl">
+                    <div class="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-6">
+                        <div>
+                            <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+                                <i data-lucide="database" class="text-emerald-400"></i>
+                                History Data Gabungan Giro
+                            </h3>
+                            <p class="text-xs text-slate-400 mt-1">Menampilkan seluruh catatan transaksi dari Google Sheet</p>
+                        </div>
+                        
+                        <!-- Search Box Data History -->
+                        <div class="relative w-full md:w-72">
+                            <input type="text" id="searchHistory" placeholder="Cari nama, PDC, bank..." class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-4 py-2 pl-10 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto max-h-[500px] overflow-y-auto border border-slate-700/60 rounded-xl">
+                        <table class="w-full text-left text-xs text-slate-300 relative">
+                            <thead class="bg-slate-900 text-slate-400 uppercase sticky top-0 z-10">
+                                <tr>
+                                    <th class="py-3 px-4">No PDC</th>
+                                    <th class="py-3 px-4">Atas Nama Rekening</th>
+                                    <th class="py-3 px-4">Nama Bank</th>
+                                    <th class="py-3 px-4 text-right">Nominal PDC</th>
+                                    <th class="py-3 px-4">Tgl PDC</th>
+                                    <th class="py-3 px-4">Tgl Tolakan</th>
+                                    <th class="py-3 px-4">Keterangan / Alasan</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableHistoryBody" class="divide-y divide-slate-700/50">
+                                <!-- Data History Diisi Lewat JavaScript -->
                             </tbody>
                         </table>
                     </div>
@@ -174,14 +166,13 @@
     <script>
         lucide.createIcons();
 
-        // Target URL Google Sheet (Format CSV Published)
+        // URL CSV Google Sheet
         const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/1blmL1pawujNDj_QVtnk7d7hq-U8LrAeEAfngdIzAyXE/export?format=csv&gid=0';
 
         let rawData = [];
         let bankChartInstance = null;
         let reasonChartInstance = null;
 
-        // Fetch Data dari Google Sheets
         async function fetchSheetData() {
             try {
                 const response = await fetch(SHEET_CSV_URL);
@@ -193,9 +184,10 @@
             }
         }
 
-        // CSV Parser Sederhana
         function parseCSV(text) {
             const lines = text.split('\n').filter(line => line.trim() !== '');
+            if (lines.length === 0) return [];
+            
             const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
             
             return lines.slice(1).map(line => {
@@ -209,19 +201,18 @@
         }
 
         function initDashboard() {
-            // Event Listener Filter
             document.getElementById('filterTahun').addEventListener('change', updateDashboard);
             document.getElementById('filterBulan').addEventListener('change', updateDashboard);
+            document.getElementById('searchHistory').addEventListener('input', renderHistoryTable);
 
             updateDashboard();
         }
 
-        function updateDashboard() {
+        function getFilteredData() {
             const tahun = document.getElementById('filterTahun').value;
             const bulan = document.getElementById('filterBulan').value;
 
-            // Filter Data
-            const filteredData = rawData.filter(item => {
+            return rawData.filter(item => {
                 const tglPDC = new Date(item['Tgl PDC']);
                 if (isNaN(tglPDC)) return false;
 
@@ -230,33 +221,17 @@
 
                 return matchTahun && matchBulan;
             });
-
-            renderKPI(filteredData);
-            renderBankChart(filteredData);
-            renderReasonChart(filteredData);
-            renderTable(filteredData);
         }
 
-        // Render KPI Cards
-        function renderKPI(data) {
-            const uniqueCustomers = new Set(data.map(d => d['Atas Nama Rekening'])).size;
-            document.getElementById('statTotalCustomer').innerText = uniqueCustomers;
-            document.getElementById('statTotalTolakan').innerText = data.length;
-
-            // Hitung Customer Risk Tinggi (>3x/Bln)
-            const customerFreq = {};
-            data.forEach(d => {
-                const name = d['Atas Nama Rekening'];
-                const date = new Date(d['Tgl PDC']);
-                const key = `${name}_${date.getFullYear()}_${date.getMonth()}`;
-                customerFreq[key] = (customerFreq[key] || 0) + 1;
-            });
-
-            const highRiskCount = Object.values(customerFreq).filter(count => count > 3).length;
-            document.getElementById('statHighRisk').innerText = highRiskCount;
+        function updateDashboard() {
+            const data = getFilteredData();
+            renderBankChart(data);
+            renderReasonChart(data);
+            renderTopCustomerTable(data);
+            renderHistoryTable();
         }
 
-        // Render Chart Bank
+        // Render Top 10 Bank Chart
         function renderBankChart(data) {
             const bankCounts = {};
             data.forEach(d => {
@@ -266,19 +241,16 @@
 
             const sortedBanks = Object.entries(bankCounts).sort((a,b) => b[1] - a[1]).slice(0, 10);
 
-            const labels = sortedBanks.map(b => b[0]);
-            const counts = sortedBanks.map(b => b[1]);
-
             if (bankChartInstance) bankChartInstance.destroy();
 
             const ctx = document.getElementById('bankChart').getContext('2d');
             bankChartInstance = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: labels,
+                    labels: sortedBanks.map(b => b[0]),
                     datasets: [{
                         label: 'Frekuensi Tolakan',
-                        data: counts,
+                        data: sortedBanks.map(b => b[1]),
                         backgroundColor: '#6366f1',
                         borderRadius: 6
                     }]
@@ -295,38 +267,60 @@
             });
         }
 
-        // Render Chart Alasan
+        // Render Pie Chart Kriteria Alasan (Persentase)
         function renderReasonChart(data) {
-            const reasonCounts = {};
-            data.forEach(d => {
-                const reason = d['Keterangan'] || 'Lain-Lain';
-                reasonCounts[reason] = (reasonCounts[reason] || 0) + 1;
-            });
+            let danaTdkCukup = 0;
+            let asuransiSpecial = 0;
+            let alasanLainnya = 0;
 
-            const sortedReasons = Object.entries(reasonCounts).sort((a,b) => b[1] - a[1]).slice(0, 5);
+            data.forEach(d => {
+                const ket = (d['Keterangan'] || '').toLowerCase();
+                if (ket.includes('dana tdk cukup') || ket.includes('dana tidak cukup')) {
+                    danaTdkCukup++;
+                } else if (ket.includes('asuransi')) {
+                    asuransiSpecial++;
+                } else {
+                    alasanLainnya++;
+                }
+            });
 
             if (reasonChartInstance) reasonChartInstance.destroy();
 
             const ctx = document.getElementById('reasonChart').getContext('2d');
             reasonChartInstance = new Chart(ctx, {
                 type: 'doughnut',
+                plugins: [ChartDataLabels],
                 data: {
-                    labels: sortedReasons.map(r => r[0]),
+                    labels: ['Dana Tidak Cukup', 'Asuransi / Tolakan Khusus', 'Alasan Lainnya'],
                     datasets: [{
-                        data: sortedReasons.map(r => r[1]),
-                        backgroundColor: ['#f43f5e', '#fbbf24', '#3b82f6', '#10b981', '#8b5cf6']
+                        data: [danaTdkCukup, asuransiSpecial, alasanLainnya],
+                        backgroundColor: ['#f43f5e', '#fbbf24', '#3b82f6']
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { position: 'right', labels: { color: '#94a3b8' } } }
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 11 } } },
+                        datalabels: {
+                            color: '#ffffff',
+                            font: { weight: 'bold', size: 12 },
+                            formatter: (value, ctx) => {
+                                let sum = 0;
+                                let dataArr = ctx.chart.data.datasets[0].data;
+                                dataArr.map(data => { sum += data; });
+                                if (sum === 0) return '0%';
+                                let percentage = (value * 100 / sum).toFixed(1) + "%";
+                                return percentage;
+                            }
+                        }
+                    }
                 }
             });
         }
 
-        // Render Table High Risk Customer
-        function renderTable(data) {
+        // Render Table Top 10 Customer (>3x Tolakan)
+        function renderTopCustomerTable(data) {
             const customerMap = {};
 
             data.forEach(d => {
@@ -341,7 +335,6 @@
                 customerMap[name].items.push(d);
             });
 
-            // Filter Customer dengan Tolakan >3x
             let highRiskList = Object.values(customerMap).filter(c => c.count > 3);
             highRiskList.sort((a, b) => b.count - a.count);
             highRiskList = highRiskList.slice(0, 10);
@@ -350,12 +343,11 @@
             tbody.innerHTML = '';
 
             if (highRiskList.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="4" class="text-center py-6 text-slate-500">Tidak ada customer dengan tolakan >3x pada periode ini.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="4" class="text-center py-6 text-slate-500">Tidak ada customer dengan tolakan >3x pada periode filter ini.</td></tr>`;
                 return;
             }
 
             highRiskList.forEach(c => {
-                // Ambil 3 transaksi terupdate
                 const sortedItems = c.items.sort((a, b) => new Date(b['Tgl PDC']) - new Date(a['Tgl PDC'])).slice(0, 3);
                 
                 const datesInfo = sortedItems.map(item => 
@@ -378,7 +370,40 @@
             });
         }
 
-        // Inisialisasi awal saat halaman dimuat
+        // Render Table History Data Gabungan
+        function renderHistoryTable() {
+            const data = getFilteredData();
+            const keyword = document.getElementById('searchHistory').value.toLowerCase();
+
+            const filteredHistory = data.filter(item => {
+                const searchStr = `${item['No PDC']} ${item['Atas Nama Rekening']} ${item['Nama Bank']} ${item['Keterangan']}`.toLowerCase();
+                return searchStr.includes(keyword);
+            });
+
+            const tbody = document.getElementById('tableHistoryBody');
+            tbody.innerHTML = '';
+
+            if (filteredHistory.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-slate-500">Data history tidak ditemukan.</td></tr>`;
+                return;
+            }
+
+            filteredHistory.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-800/40 transition-colors";
+                tr.innerHTML = `
+                    <td class="py-2.5 px-4 font-mono text-indigo-300">${item['No PDC'] || '-'}</td>
+                    <td class="py-2.5 px-4 font-medium text-white">${item['Atas Nama Rekening'] || '-'}</td>
+                    <td class="py-2.5 px-4 text-slate-300">${item['Nama Bank'] || '-'}</td>
+                    <td class="py-2.5 px-4 text-right font-mono text-emerald-400">${item[' Nominal PDC '] || item['Nominal PDC'] || '-'}</td>
+                    <td class="py-2.5 px-4 text-slate-300">${item['Tgl PDC'] || '-'}</td>
+                    <td class="py-2.5 px-4 text-rose-300">${item['Tgl Tolakan'] || '-'}</td>
+                    <td class="py-2.5 px-4 text-slate-400">${item['Keterangan'] || '-'}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
         fetchSheetData();
     </script>
 </body>
