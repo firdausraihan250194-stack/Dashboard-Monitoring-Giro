@@ -257,7 +257,8 @@
                                     <th class="py-3 px-4 text-right">Nominal PDC</th>
                                     <th class="py-3 px-4">Tgl PDC</th>
                                     <th class="py-3 px-4">Tgl Tolakan</th>
-                                    <th class="py-3 px-4">Keterangan / Alasan</th>
+                                    <th class="py-3 px-4">Keterangan</th>
+                                    <th class="py-3 px-4 text-center">Status</th>
                                 </tr>
                             </thead>
                             <tbody id="tableHistoryBody" class="divide-y divide-slate-800/60">
@@ -315,19 +316,15 @@
             return isNaN(fallbackDate.getTime()) ? null : fallbackDate;
         }
 
-        // FUNGSI KHUSUS MENGAMBIL NAMA SHEET UTAMA SECARA OTOMATIS
         async function fetchSheetTitle() {
             try {
                 const res = await fetch(GVIZ_META_URL);
                 const text = await res.text();
                 
-                // Google Visualization API mengembalikan respons JSON wrapped dalam 'google.visualization.Query.setResponse(...)'
                 const jsonStr = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\);/);
                 if (jsonStr && jsonStr[1]) {
                     const jsonObj = JSON.parse(jsonStr[1]);
-                    // Ambil nama sheet dari atribut query sheet
                     if (jsonObj.table && jsonObj.table.reqId !== undefined) {
-                        // Membaca respons dan mengisi teks secara otomatis
                         document.getElementById('sheetTitleText').innerText = "Data Giro 7 Oktober 2026";
                         return;
                     }
@@ -340,7 +337,6 @@
 
         async function fetchAllSheetData() {
             try {
-                // Panggil pengambilan nama sheet & data CSV secara bersamaan
                 fetchSheetTitle();
 
                 const [giroRes, arRes] = await Promise.all([
@@ -443,7 +439,7 @@
             processedGiroData = giroData.map(item => {
                 const info = getCustomerARInfo(item['Atas Nama Rekening'], item);
                 const parsedDate = parseCustomDate(item['Tgl PDC']);
-                const searchStr = `${item['No PDC']} ${info.officialName} ${info.userAo} ${item['Nama Bank']} ${item['Keterangan']}`.toLowerCase();
+                const searchStr = `${item['No PDC']} ${info.officialName} ${info.userAo} ${item['Nama Bank']} ${item['Keterangan']} ${info.status}`.toLowerCase();
                 
                 const rawNominal = item['Nominal PDC'] || item[' Nominal PDC '] || item['Nominal_PDC'] || '';
                 const cleanNominal = cleanNominalString(rawNominal);
@@ -880,7 +876,7 @@
             tbody.innerHTML = '';
 
             if (matchedList.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-slate-500">Data history tidak ditemukan.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="9" class="text-center py-6 text-slate-500">Data history tidak ditemukan.</td></tr>`;
                 return;
             }
 
@@ -890,6 +886,11 @@
             displayLimitList.forEach(item => {
                 const info = item.info;
                 const raw = item.raw;
+
+                let statusBadge = `<span class="bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded text-[10px] font-bold">${info.status}</span>`;
+                if (info.status === 'PT') statusBadge = `<span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded text-[10px] font-bold">PT</span>`;
+                if (info.status === 'CL') statusBadge = `<span class="bg-slate-500/20 text-slate-300 border border-slate-500/30 px-2 py-0.5 rounded text-[10px] font-bold">CL</span>`;
+                if (info.status === 'RP') statusBadge = `<span class="bg-rose-500/20 text-rose-300 border border-rose-500/30 px-2 py-0.5 rounded text-[10px] font-bold">RP</span>`;
 
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-slate-800/50 transition-colors";
@@ -902,6 +903,7 @@
                     <td class="py-2.5 px-4 text-slate-300">${raw['Tgl PDC'] || '-'}</td>
                     <td class="py-2.5 px-4 text-rose-300">${raw['Tgl Tolakan'] || '-'}</td>
                     <td class="py-2.5 px-4 text-slate-400">${raw['Keterangan'] || '-'}</td>
+                    <td class="py-2.5 px-4 text-center">${statusBadge}</td>
                 `;
                 fragment.appendChild(tr);
             });
