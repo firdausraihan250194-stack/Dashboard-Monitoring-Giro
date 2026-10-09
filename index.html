@@ -35,17 +35,24 @@
                         <i data-lucide="layout-dashboard" class="text-indigo-400"></i>
                         Dashboard Monitoring Tolakan Giro
                     </h1>
-                    <div class="flex items-center gap-3 mt-1">
-                        <p class="text-xs text-slate-400">Analisis Frekuensi & Alasan Tolakan Giro Debitur</p>
-                        <span class="text-slate-600">•</span>
-                        <p class="text-xs text-emerald-400 flex items-center gap-1 font-medium">
-                            <i data-lucide="clock" class="w-3.5 h-3.5"></i>
-                            Last Update: <span id="lastUpdateText">Memuat...</span>
+                    <div class="flex flex-col gap-0.5 mt-1">
+                        <div class="flex items-center gap-2">
+                            <p class="text-xs text-slate-400">Analisis Frekuensi & Alasan Tolakan Giro Debitur</p>
+                            <span class="text-slate-600">•</span>
+                            <p class="text-xs text-emerald-400 flex items-center gap-1 font-medium">
+                                <i data-lucide="clock" class="w-3.5 h-3.5"></i>
+                                Last Update: <span id="lastUpdateText">Memuat...</span>
+                            </p>
+                        </div>
+                        <!-- Keterangan Judul Google Sheet di Bawah Last Update -->
+                        <p class="text-[11px] text-indigo-300 flex items-center gap-1 font-medium mt-0.5">
+                            <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5 text-indigo-400"></i>
+                            Sumber Data: <span class="font-semibold text-slate-200">Data Giro Debitur & Sheet AR Monitoring</span>
                         </p>
                     </div>
                 </div>
                 
-                <!-- Filter Controls Dinamis -->
+                <!-- Filter Controls -->
                 <div class="flex flex-wrap items-center gap-3 bg-slate-900 p-2 rounded-xl border border-slate-800">
                     <div class="flex items-center gap-2 px-2">
                         <i data-lucide="filter" class="w-4 h-4 text-indigo-400"></i>
@@ -60,12 +67,10 @@
                         <option value="RP">RP (Repo)</option>
                     </select>
 
-                    <!-- Pilihan Tahun Otomatis Mengikuti Data Sheet -->
                     <select id="filterTahun" class="bg-slate-800 text-slate-200 text-xs border border-slate-700 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium">
                         <option value="ALL">Semua Tahun</option>
                     </select>
 
-                    <!-- Pilihan Bulan Otomatis Mengikuti Data Sheet -->
                     <select id="filterBulan" class="bg-slate-800 text-slate-200 text-xs border border-slate-700 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium">
                         <option value="ALL">Semua Bulan</option>
                         <option value="0">Januari</option>
@@ -162,7 +167,6 @@
                             <p class="text-xs text-slate-400 mt-1">Perbandingan jumlah frekuensi tolakan bulanan antar tahun berjalan</p>
                         </div>
 
-                        <!-- Keterangan Tahun & Indikator Tren Perbandingan YoY -->
                         <div class="flex items-center gap-3 bg-slate-900/90 p-3 rounded-xl border border-slate-800">
                             <div class="text-right px-2">
                                 <p class="text-[10px] text-slate-400 font-semibold uppercase" id="yoyLabelPrev">Total Tolakan 2025</p>
@@ -186,7 +190,6 @@
                         </div>
                     </div>
 
-                    <!-- Area Grafik Batang Multi-Tahun (Grouped Bar Chart) -->
                     <div class="relative h-72">
                         <canvas id="monthlyTrendChart"></canvas>
                     </div>
@@ -279,27 +282,23 @@
 
         let giroData = [];
         let arDataList = [];
-        let customerAoMap = {}; 
-        let customerStatusMap = {}; 
-        let officialNameMap = {}; 
+        let processedGiroData = [];
         let detectedYears = [];
 
         let bankChartInstance = null;
         let reasonChartInstance = null;
         let monthlyChartInstance = null;
+        let searchTimeout = null;
 
-        // FUNGSI KHUSUS PARSING TANGGAL TEKS GOOGLE SHEETS (1-Oct-26 / 28-Sep-2026 / 01/10/2026)
         function parseCustomDate(dateStr) {
             if (!dateStr || dateStr.trim() === '') return null;
             const str = dateStr.trim();
-
             const monthNames = {
                 'jan': 0, 'feb': 1, 'mar': 2, 'apr': 3, 'may': 4, 'mei': 4,
                 'jun': 5, 'jul': 6, 'aug': 7, 'agt': 7, 'sep': 8, 'oct': 9, 'okt': 9,
                 'nov': 10, 'dec': 11, 'des': 11
             };
 
-            // Coba format DD-MMM-YY atau DD-MMM-YYYY (contoh: 1-Oct-26 / 28-Sep-2026)
             const textParts = str.split(/[-/\s]+/);
             if (textParts.length === 3) {
                 const day = parseInt(textParts[0], 10);
@@ -307,12 +306,10 @@
                 let year = parseInt(textParts[2], 10);
 
                 if (!isNaN(day) && monthNames[monthStr] !== undefined) {
-                    if (year < 100) year += 2000; // Mengubah 26 -> 2026
+                    if (year < 100) year += 2000;
                     return new Date(year, monthNames[monthStr], day);
                 }
             }
-
-            // Fallback parse standar JS jika format sudah standar YYYY-MM-DD
             const fallbackDate = new Date(str);
             return isNaN(fallbackDate.getTime()) ? null : fallbackDate;
         }
@@ -330,6 +327,7 @@
                 parseARData(arText);
                 giroData = parseCSV(giroText);
 
+                preProcessGiroData();
                 populateYearFilterOptions();
 
                 const now = new Date();
@@ -342,30 +340,16 @@
             }
         }
 
-        // FUNGSI OTOMATIS POPULASI DROP-DOWN FILTER TAHUN BERDASARKAN DATA TERBARU
-        function populateYearFilterOptions() {
-            const yearSet = new Set();
-            giroData.forEach(item => {
-                const d = parseCustomDate(item['Tgl PDC']);
-                if (d) yearSet.add(d.getFullYear());
-            });
-
-            detectedYears = Array.from(yearSet).sort((a, b) => a - b);
-            if (detectedYears.length === 0) detectedYears = [2025, 2026];
-
-            const yearSelect = document.getElementById('filterTahun');
-            yearSelect.innerHTML = '<option value="ALL">Semua Tahun</option>';
-            detectedYears.forEach(y => {
-                const opt = document.createElement('option');
-                opt.value = y.toString();
-                opt.innerText = y.toString();
-                yearSelect.appendChild(opt);
-            });
-        }
-
         function cleanName(str) {
             if (!str) return '';
             return str.replace(/PT\s+/gi, '').replace(/CV\s+/gi, '').replace(/[^a-zA-Z0-9\s]/g, '').trim().toUpperCase();
+        }
+
+        // FUNGSI PEMBERSIH ANGKATAN & TEKS NOMINAL (MENGHAPUS TANDA KUTIP & SPASI EKSTRA)
+        function cleanNominalString(val) {
+            if (!val) return '-';
+            let str = val.toString().replace(/"/g, '').trim();
+            return str === '' ? '-' : str;
         }
 
         function sanitizeNumber(val) {
@@ -373,6 +357,10 @@
             const cleanVal = val.toString().replace(/[^0-9.-]+/g, "").trim();
             return cleanVal === '' ? '0' : cleanVal;
         }
+
+        let officialNameMap = {};
+        let customerAoMap = {};
+        let customerStatusMap = {};
 
         function parseARData(csvText) {
             arDataList = parseCSV(csvText);
@@ -425,17 +413,59 @@
             };
         }
 
+        function preProcessGiroData() {
+            processedGiroData = giroData.map(item => {
+                const info = getCustomerARInfo(item['Atas Nama Rekening'], item);
+                const parsedDate = parseCustomDate(item['Tgl PDC']);
+                const searchStr = `${item['No PDC']} ${info.officialName} ${info.userAo} ${item['Nama Bank']} ${item['Keterangan']}`.toLowerCase();
+                
+                // BERSIHKAN NOMINAL DARI TANDA KUTIP & SPASI BERLEBIH
+                const rawNominal = item['Nominal PDC'] || item[' Nominal PDC '] || item['Nominal_PDC'] || '';
+                const cleanNominal = cleanNominalString(rawNominal);
+
+                return {
+                    raw: item,
+                    info: info,
+                    cleanNominal: cleanNominal,
+                    parsedDate: parsedDate,
+                    year: parsedDate ? parsedDate.getFullYear() : null,
+                    month: parsedDate ? parsedDate.getMonth() : null,
+                    searchStr: searchStr
+                };
+            });
+        }
+
+        function populateYearFilterOptions() {
+            const yearSet = new Set();
+            processedGiroData.forEach(item => {
+                if (item.year) yearSet.add(item.year);
+            });
+
+            detectedYears = Array.from(yearSet).sort((a, b) => a - b);
+            if (detectedYears.length === 0) detectedYears = [2025, 2026];
+
+            const yearSelect = document.getElementById('filterTahun');
+            yearSelect.innerHTML = '<option value="ALL">Semua Tahun</option>';
+            detectedYears.forEach(y => {
+                const opt = document.createElement('option');
+                opt.value = y.toString();
+                opt.innerText = y.toString();
+                yearSelect.appendChild(opt);
+            });
+        }
+
         function parseCSV(text) {
             const lines = text.split('\n').filter(line => line.trim() !== '');
             if (lines.length === 0) return [];
             
+            // BERSIHKAN HEADER DARI TANDA KUTIP DAN SPASI BERLEBIH
             const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
             
             return lines.slice(1).map(line => {
                 const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.trim().replace(/^"\vert{}"$/g, ''));
                 let obj = {};
                 headers.forEach((h, i) => {
-                    obj[h] = values[i] || '';
+                    obj[h] = values[i] ? values[i].replace(/^"|"$/g, '').trim() : '';
                 });
                 return obj;
             });
@@ -445,7 +475,11 @@
             document.getElementById('filterContractStatus').addEventListener('change', updateDashboard);
             document.getElementById('filterTahun').addEventListener('change', updateDashboard);
             document.getElementById('filterBulan').addEventListener('change', updateDashboard);
-            document.getElementById('searchHistory').addEventListener('input', renderHistoryTable);
+            
+            document.getElementById('searchHistory').addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(renderHistoryTable, 250);
+            });
 
             updateDashboard();
             renderIcons();
@@ -456,42 +490,37 @@
             const tahunFilter  = document.getElementById('filterTahun').value;
             const bulanFilter  = document.getElementById('filterBulan').value;
 
-            return giroData.filter(item => {
-                const info = getCustomerARInfo(item['Atas Nama Rekening'], item);
-                const tglPDC = parseCustomDate(item['Tgl PDC']);
-                if (!tglPDC) return false;
+            return processedGiroData.filter(item => {
+                if (!item.parsedDate) return false;
 
-                const matchStatus = (statusFilter === 'ALL') || (info.status.toUpperCase() === statusFilter.toUpperCase());
-                const matchTahun  = (tahunFilter === 'ALL')  || (tglPDC.getFullYear().toString() === tahunFilter);
-                const matchBulan  = (bulanFilter === 'ALL')  || (tglPDC.getMonth().toString() === bulanFilter);
+                const matchStatus = (statusFilter === 'ALL') || (item.info.status.toUpperCase() === statusFilter.toUpperCase());
+                const matchTahun  = (tahunFilter === 'ALL')  || (item.year.toString() === tahunFilter);
+                const matchBulan  = (bulanFilter === 'ALL')  || (item.month.toString() === bulanFilter);
 
                 return matchStatus && matchTahun && matchBulan;
             });
         }
 
         function updateDashboard() {
-            const data = getFilteredData();
-            renderKPICards(data);
-            renderBankChart3D(data);
-            renderReasonChart3D(data);
+            const filteredProcessed = getFilteredData();
+            renderKPICards(filteredProcessed);
+            renderBankChart3D(filteredProcessed);
+            renderReasonChart3D(filteredProcessed);
             renderGroupedMonthlyTrendChart();
-            renderTopCustomerTable(data);
+            renderTopCustomerTable(filteredProcessed);
             renderHistoryTable();
             renderIcons();
         }
 
-        function renderKPICards(data) {
+        function renderKPICards(filteredProcessed) {
             const customerSet = new Set();
             let totalOverdueSum = 0;
             const customerOverdueMap = {};
 
-            data.forEach(item => {
-                const rawName = item['Atas Nama Rekening'];
-                if (rawName) {
-                    const info = getCustomerARInfo(rawName, item);
-                    customerSet.add(info.officialName);
-                    customerOverdueMap[info.officialName] = parseFloat(info.ovdAmount) || 0;
-                }
+            filteredProcessed.forEach(item => {
+                const officialName = item.info.officialName;
+                customerSet.add(officialName);
+                customerOverdueMap[officialName] = parseFloat(item.info.ovdAmount) || 0;
             });
 
             Object.values(customerOverdueMap).forEach(amt => {
@@ -499,14 +528,14 @@
             });
 
             document.getElementById('kpiTotalCustomer').innerText = customerSet.size;
-            document.getElementById('kpiTotalTolakan').innerText = data.length;
+            document.getElementById('kpiTotalTolakan').innerText = filteredProcessed.length;
             document.getElementById('kpiTotalOverdue').innerText = formatCurrency(totalOverdueSum);
         }
 
-        function renderBankChart3D(data) {
+        function renderBankChart3D(filteredProcessed) {
             const bankCounts = {};
-            data.forEach(d => {
-                const bank = d['Nama Bank'] || 'Lainnya';
+            filteredProcessed.forEach(d => {
+                const bank = d.raw['Nama Bank'] || 'Lainnya';
                 bankCounts[bank] = (bankCounts[bank] || 0) + 1;
             });
 
@@ -554,13 +583,13 @@
             });
         }
 
-        function renderReasonChart3D(data) {
+        function renderReasonChart3D(filteredProcessed) {
             let danaTdkCukup = 0;
             let asuransiSpecial = 0;
             let alasanLainnya = 0;
 
-            data.forEach(d => {
-                const ket = (d['Keterangan'] || '').toLowerCase();
+            filteredProcessed.forEach(d => {
+                const ket = (d.raw['Keterangan'] || '').toLowerCase();
                 if (ket.includes('dana tdk cukup') || ket.includes('dana tidak cukup') || ket.includes('dana dk cukup')) {
                     danaTdkCukup++;
                 } else if (ket.includes('asuransi')) {
@@ -613,7 +642,6 @@
             });
         }
 
-        // Render Grafik Grouped Bar Dinamis untuk Semua Tahun Terdeteksi
         function renderGroupedMonthlyTrendChart() {
             const statusFilter = document.getElementById('filterContractStatus').value;
             const bulanFilter  = document.getElementById('filterBulan').value;
@@ -624,23 +652,19 @@
                 yearMonthData[y] = new Array(12).fill(0);
             });
 
-            giroData.forEach(item => {
-                const info = getCustomerARInfo(item['Atas Nama Rekening'], item);
-                const tglPDC = parseCustomDate(item['Tgl PDC']);
-                if (!tglPDC) return;
-
-                const matchStatus = (statusFilter === 'ALL') || (info.status.toUpperCase() === statusFilter.toUpperCase());
+            processedGiroData.forEach(item => {
+                if (!item.parsedDate) return;
+                const matchStatus = (statusFilter === 'ALL') || (item.info.status.toUpperCase() === statusFilter.toUpperCase());
                 if (!matchStatus) return;
 
-                const y = tglPDC.getFullYear();
-                const m = tglPDC.getMonth();
+                const y = item.year;
+                const m = item.month;
 
                 if (yearMonthData[y] && m >= 0 && m < 12) {
                     yearMonthData[y][m]++;
                 }
             });
 
-            // Tentukan 2 Tahun Terakhir untuk Perbandingan Dinamis (Misal 2025 vs 2026)
             const latestYear = detectedYears[detectedYears.length - 1] || 2026;
             const prevYear   = detectedYears[detectedYears.length - 2] || (latestYear - 1);
 
@@ -694,7 +718,6 @@
             }
             document.getElementById('yoyBadgeContainer').innerHTML = yoyBadgeHTML;
 
-            // Buat Datasets Grafik Batang Dinamis per Tahun
             const colors = ['#6366f1', '#10b981', '#f59e0b', '#ec4899'];
             const datasets = detectedYears.map((year, idx) => ({
                 label: `Tahun ${year}`,
@@ -754,11 +777,11 @@
             return 'Rp ' + num.toLocaleString('id-ID');
         }
 
-        function renderTopCustomerTable(data) {
+        function renderTopCustomerTable(filteredProcessed) {
             const customerMap = {};
 
-            data.forEach(d => {
-                const rawName = d['Atas Nama Rekening'];
+            filteredProcessed.forEach(d => {
+                const rawName = d.raw['Atas Nama Rekening'];
                 if (!rawName) return;
 
                 if (!customerMap[rawName]) {
@@ -783,19 +806,17 @@
 
             topCustomers.forEach(c => {
                 const sampleItem = c.items[0];
-                const info = getCustomerARInfo(c.name, sampleItem);
+                const info = sampleItem.info;
 
                 const sortedItems = c.items.sort((a, b) => {
-                    const dA = parseCustomDate(b['Tgl PDC']);
-                    const dB = parseCustomDate(a['Tgl PDC']);
-                    return (dA && dB) ? dA - dB : 0;
+                    return (b.parsedDate && a.parsedDate) ? b.parsedDate - a.parsedDate : 0;
                 }).slice(0, 3);
                 
                 const datesInfo = sortedItems.map(item => 
-                    `<div class="text-[11px] mb-1"><span class="text-slate-400">PDC:</span> ${item['Tgl PDC']} | <span class="text-rose-400">Tolakan:</span> ${item['Tgl Tolakan']}</div>`
+                    `<div class="text-[11px] mb-1"><span class="text-slate-400">PDC:</span> ${item.raw['Tgl PDC']} | <span class="text-rose-400">Tolakan:</span> ${item.raw['Tgl Tolakan']}</div>`
                 ).join('');
 
-                const reason = sortedItems[0]['Keterangan'] || '-';
+                const reason = sortedItems[0].raw['Keterangan'] || '-';
 
                 let statusBadge = `<span class="bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded text-[10px] font-bold">${info.status}</span>`;
                 if (info.status === 'PT') statusBadge = `<span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded text-[10px] font-bold">PT</span>`;
@@ -823,40 +844,45 @@
         }
 
         function renderHistoryTable() {
-            const data = getFilteredData();
-            const keyword = document.getElementById('searchHistory').value.toLowerCase();
+            const filteredProcessed = getFilteredData();
+            const keyword = document.getElementById('searchHistory').value.toLowerCase().trim();
 
-            const filteredHistory = data.filter(item => {
-                const info = getCustomerARInfo(item['Atas Nama Rekening'], item);
-                const searchStr = `${item['No PDC']} ${info.officialName} ${info.userAo} ${item['Nama Bank']} ${item['Keterangan']}`.toLowerCase();
-                return searchStr.includes(keyword);
-            });
+            let matchedList = filteredProcessed;
+            if (keyword !== '') {
+                matchedList = filteredProcessed.filter(item => item.searchStr.includes(keyword));
+            }
 
             const tbody = document.getElementById('tableHistoryBody');
             tbody.innerHTML = '';
 
-            if (filteredHistory.length === 0) {
+            if (matchedList.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-slate-500">Data history tidak ditemukan.</td></tr>`;
                 return;
             }
 
-            filteredHistory.forEach(item => {
-                const info = getCustomerARInfo(item['Atas Nama Rekening'], item);
+            const displayLimitList = matchedList.slice(0, 200);
+
+            const fragment = document.createDocumentFragment();
+            displayLimitList.forEach(item => {
+                const info = item.info;
+                const raw = item.raw;
 
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-slate-800/50 transition-colors";
                 tr.innerHTML = `
-                    <td class="py-2.5 px-4 font-mono text-indigo-300">${item['No PDC'] || '-'}</td>
+                    <td class="py-2.5 px-4 font-mono text-indigo-300">${raw['No PDC'] || '-'}</td>
                     <td class="py-2.5 px-4 font-medium text-white">${info.officialName}</td>
                     <td class="py-2.5 px-4 font-medium text-indigo-400">${info.userAo}</td>
-                    <td class="py-2.5 px-4 text-slate-300">${item['Nama Bank'] || '-'}</td>
-                    <td class="py-2.5 px-4 text-right font-mono text-emerald-400">${item[' Nominal PDC '] || item['Nominal PDC'] || '-'}</td>
-                    <td class="py-2.5 px-4 text-slate-300">${item['Tgl PDC'] || '-'}</td>
-                    <td class="py-2.5 px-4 text-rose-300">${item['Tgl Tolakan'] || '-'}</td>
-                    <td class="py-2.5 px-4 text-slate-400">${item['Keterangan'] || '-'}</td>
+                    <td class="py-2.5 px-4 text-slate-300">${raw['Nama Bank'] || '-'}</td>
+                    <td class="py-2.5 px-4 text-right font-mono text-emerald-400">${item.cleanNominal}</td>
+                    <td class="py-2.5 px-4 text-slate-300">${raw['Tgl PDC'] || '-'}</td>
+                    <td class="py-2.5 px-4 text-rose-300">${raw['Tgl Tolakan'] || '-'}</td>
+                    <td class="py-2.5 px-4 text-slate-400">${raw['Keterangan'] || '-'}</td>
                 `;
-                tbody.appendChild(tr);
+                fragment.appendChild(tr);
             });
+
+            tbody.appendChild(fragment);
         }
 
         fetchAllSheetData();
