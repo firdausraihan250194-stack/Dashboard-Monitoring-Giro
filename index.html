@@ -316,6 +316,7 @@
             return isNaN(fallbackDate.getTime()) ? null : fallbackDate;
         }
 
+        // FUNGSI DINAMIS PEMBACA NAMA SHEET GOOGLE
         async function fetchSheetTitle() {
             try {
                 const res = await fetch(GVIZ_META_URL);
@@ -324,14 +325,24 @@
                 const jsonStr = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\);/);
                 if (jsonStr && jsonStr[1]) {
                     const jsonObj = JSON.parse(jsonStr[1]);
-                    if (jsonObj.table && jsonObj.table.reqId !== undefined) {
-                        document.getElementById('sheetTitleText').innerText = "Data Giro 7 Oktober 2026";
-                        return;
+                    // Mengambil nama sheet dari properti metadata gviz jika ada
+                    if (jsonObj && jsonObj.table && jsonObj.table.cols && jsonObj.table.cols[0]) {
+                        // Secara default jika tab bernama khusus, GVIZ mengembalikan sheetname pada label atau objek response
                     }
                 }
-                document.getElementById('sheetTitleText').innerText = "Data Giro 7 Oktober 2026";
+                
+                // Fetch HTML langsung untuk membaca nama tab pertama secara akurat
+                const htmlRes = await fetch('https://docs.google.com/spreadsheets/d/1blmL1pawujNDj_QVtnk7d7hq-U8LrAeEAfngdIzAyXE/htmlview');
+                const htmlText = await htmlRes.text();
+                const sheetNameMatch = htmlText.match(/<li id="sheet-button-0"[^>]*><a[^>]*>(.*?)<\/a><\/li>/);
+                
+                if (sheetNameMatch && sheetNameMatch[1]) {
+                    document.getElementById('sheetTitleText').innerText = sheetNameMatch[1].trim();
+                } else {
+                    document.getElementById('sheetTitleText').innerText = "Data Giro 14 Oktober 2026";
+                }
             } catch (err) {
-                document.getElementById('sheetTitleText').innerText = "Data Giro 7 Oktober 2026";
+                document.getElementById('sheetTitleText').innerText = "Data Giro 14 Oktober 2026";
             }
         }
 
