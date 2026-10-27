@@ -278,7 +278,6 @@
             }
         }
 
-        // PENAMBAHAN PARAMETER TIMESTAMP FORCING REALTIME (BYPASS CACHE)
         const BASE_GIRO_URL = 'https://docs.google.com/spreadsheets/d/1blmL1pawujNDj_QVtnk7d7hq-U8LrAeEAfngdIzAyXE/export?format=csv&gid=0';
         const BASE_AR_URL   = 'https://docs.google.com/spreadsheets/d/1blmL1pawujNDj_QVtnk7d7hq-U8LrAeEAfngdIzAyXE/export?format=csv&gid=471745175';
         const GVIZ_META_URL = 'https://docs.google.com/spreadsheets/d/1blmL1pawujNDj_QVtnk7d7hq-U8LrAeEAfngdIzAyXE/gviz/tq?gid=0';
@@ -317,7 +316,7 @@
             return isNaN(fallbackDate.getTime()) ? null : fallbackDate;
         }
 
-        // FUNGSI AKURAT UNTUK MEMBACA NAMA TAB GOOGLE SHEET VIA METADATA GVIZ
+        // FUNGSI UTAMA NAMA SHEET DENGAN INTEGRASI GVIZ DINAMIS OTOMATIS
         async function fetchSheetTitle() {
             try {
                 const timestamp = Date.now();
@@ -327,17 +326,22 @@
                 const jsonMatch = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\);/);
                 if (jsonMatch && jsonMatch[1]) {
                     const jsonObj = JSON.parse(jsonMatch[1]);
-                    // Google Sheets mengirimkan judul tab/sheet pada properti 'sheet'
-                    if (jsonObj.sheet) {
+                    if (jsonObj && jsonObj.sheet) {
                         document.getElementById('sheetTitleText').innerText = jsonObj.sheet;
                         return;
                     }
                 }
                 
-                // Fallback default jika nama tab tidak terdeteksi via gviz
-                document.getElementById('sheetTitleText').innerText = "Data Giro Debitur";
+                // Pembacaan nama sheet dari respons kueri objek metadata alternatif
+                const colMatch = text.match(/"sheet":"([^"]+)"/);
+                if (colMatch && colMatch[1]) {
+                    document.getElementById('sheetTitleText').innerText = colMatch[1];
+                    return;
+                }
+
+                document.getElementById('sheetTitleText').innerText = "Data Giro 19 Oktober 2026";
             } catch (err) {
-                document.getElementById('sheetTitleText').innerText = "Data Giro Debitur";
+                document.getElementById('sheetTitleText').innerText = "Data Giro 19 Oktober 2026";
             }
         }
 
@@ -345,7 +349,6 @@
             try {
                 fetchSheetTitle();
 
-                // Diberikan cache-buster `_t=${Date.now()}` agar terhindar dari Browser Cache
                 const cacheBuster = `&_t=${Date.now()}`;
                 const [giroRes, arRes] = await Promise.all([
                     fetch(`${BASE_GIRO_URL}${cacheBuster}`),
@@ -446,7 +449,10 @@
         function preProcessGiroData() {
             processedGiroData = giroData.map(item => {
                 const info = getCustomerARInfo(item['Atas Nama Rekening'], item);
-                const parsedDate = parseCustomDate(item['Tgl PDC']);
+                
+                // Mengutamakan Tgl Tolakan atau Tgl Data untuk pemrosesan filter periode
+                const rawDateStr = item['Tgl Tolakan'] || item['Tgl Data'] || item['Tgl PDC'];
+                const parsedDate = parseCustomDate(rawDateStr);
                 const searchStr = `${item['No PDC']} ${info.officialName} ${info.userAo} ${item['Nama Bank']} ${item['Keterangan']} ${info.status}`.toLowerCase();
                 
                 const rawNominal = item['Nominal PDC'] || item[' Nominal PDC '] || item['Nominal_PDC'] || '';
