@@ -278,9 +278,10 @@
             }
         }
 
-        const GIRO_CSV_URL   = 'https://docs.google.com/spreadsheets/d/1blmL1pawujNDj_QVtnk7d7hq-U8LrAeEAfngdIzAyXE/export?format=csv&gid=0';
-        const AR_CSV_URL     = 'https://docs.google.com/spreadsheets/d/1blmL1pawujNDj_QVtnk7d7hq-U8LrAeEAfngdIzAyXE/export?format=csv&gid=471745175';
-        const GVIZ_META_URL  = 'https://docs.google.com/spreadsheets/d/1blmL1pawujNDj_QVtnk7d7hq-U8LrAeEAfngdIzAyXE/gviz/tq?gid=0';
+        // PENAMBAHAN PARAMETER TIMESTAMP FORCING REALTIME (BYPASS CACHE)
+        const BASE_GIRO_URL = 'https://docs.google.com/spreadsheets/d/1blmL1pawujNDj_QVtnk7d7hq-U8LrAeEAfngdIzAyXE/export?format=csv&gid=0';
+        const BASE_AR_URL   = 'https://docs.google.com/spreadsheets/d/1blmL1pawujNDj_QVtnk7d7hq-U8LrAeEAfngdIzAyXE/export?format=csv&gid=471745175';
+        const GVIZ_META_URL = 'https://docs.google.com/spreadsheets/d/1blmL1pawujNDj_QVtnk7d7hq-U8LrAeEAfngdIzAyXE/gviz/tq?gid=0';
 
         let giroData = [];
         let arDataList = [];
@@ -316,33 +317,27 @@
             return isNaN(fallbackDate.getTime()) ? null : fallbackDate;
         }
 
-        // FUNGSI DINAMIS PEMBACA NAMA SHEET GOOGLE
+        // FUNGSI AKURAT UNTUK MEMBACA NAMA TAB GOOGLE SHEET VIA METADATA GVIZ
         async function fetchSheetTitle() {
             try {
-                const res = await fetch(GVIZ_META_URL);
+                const timestamp = Date.now();
+                const res = await fetch(`${GVIZ_META_URL}&_t=${timestamp}`);
                 const text = await res.text();
                 
-                const jsonStr = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\);/);
-                if (jsonStr && jsonStr[1]) {
-                    const jsonObj = JSON.parse(jsonStr[1]);
-                    // Mengambil nama sheet dari properti metadata gviz jika ada
-                    if (jsonObj && jsonObj.table && jsonObj.table.cols && jsonObj.table.cols[0]) {
-                        // Secara default jika tab bernama khusus, GVIZ mengembalikan sheetname pada label atau objek response
+                const jsonMatch = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\);/);
+                if (jsonMatch && jsonMatch[1]) {
+                    const jsonObj = JSON.parse(jsonMatch[1]);
+                    // Google Sheets mengirimkan judul tab/sheet pada properti 'sheet'
+                    if (jsonObj.sheet) {
+                        document.getElementById('sheetTitleText').innerText = jsonObj.sheet;
+                        return;
                     }
                 }
                 
-                // Fetch HTML langsung untuk membaca nama tab pertama secara akurat
-                const htmlRes = await fetch('https://docs.google.com/spreadsheets/d/1blmL1pawujNDj_QVtnk7d7hq-U8LrAeEAfngdIzAyXE/htmlview');
-                const htmlText = await htmlRes.text();
-                const sheetNameMatch = htmlText.match(/<li id="sheet-button-0"[^>]*><a[^>]*>(.*?)<\/a><\/li>/);
-                
-                if (sheetNameMatch && sheetNameMatch[1]) {
-                    document.getElementById('sheetTitleText').innerText = sheetNameMatch[1].trim();
-                } else {
-                    document.getElementById('sheetTitleText').innerText = "Data Giro 14 Oktober 2026";
-                }
+                // Fallback default jika nama tab tidak terdeteksi via gviz
+                document.getElementById('sheetTitleText').innerText = "Data Giro Debitur";
             } catch (err) {
-                document.getElementById('sheetTitleText').innerText = "Data Giro 14 Oktober 2026";
+                document.getElementById('sheetTitleText').innerText = "Data Giro Debitur";
             }
         }
 
@@ -350,9 +345,11 @@
             try {
                 fetchSheetTitle();
 
+                // Diberikan cache-buster `_t=${Date.now()}` agar terhindar dari Browser Cache
+                const cacheBuster = `&_t=${Date.now()}`;
                 const [giroRes, arRes] = await Promise.all([
-                    fetch(GIRO_CSV_URL),
-                    fetch(AR_CSV_URL)
+                    fetch(`${BASE_GIRO_URL}${cacheBuster}`),
+                    fetch(`${BASE_AR_URL}${cacheBuster}`)
                 ]);
 
                 const giroText = await giroRes.text();
@@ -493,7 +490,7 @@
             const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
             
             return lines.slice(1).map(line => {
-                const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.trim().replace(/^"\vert{}"$/g, ''));
+                const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.trim().replace(/^"|"$/g, ''));
                 let obj = {};
                 headers.forEach((h, i) => {
                     obj[h] = values[i] ? values[i].replace(/^"|"$/g, '').trim() : '';
